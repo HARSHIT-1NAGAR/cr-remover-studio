@@ -17,8 +17,9 @@ sys.path.insert(0, str(backend_dir))
 
 from app.config import (
     STORAGE_DIR, TEMP_DIR, PROCESSED_DIR, READY_EXPORT_DIR,
-    HAS_NVENC, is_nvenc_available
+    ALL_EXPORT_DIRS, HAS_NVENC, is_nvenc_available
 )
+from app.export_manager import ExportManager
 from app.presets import PRESET_CONFIGS
 from app.tts_engine import TTSEngine
 from app.scene_director import SceneDirector
@@ -54,8 +55,24 @@ async def run_all_tests():
     nvenc_ok = is_nvenc_available()
     report("NVENC GPU Hardware Detection", True, f"(Available: {nvenc_ok})")
     
-    for d_name, p in [("Uploads", STORAGE_DIR / "uploads"), ("Processed", PROCESSED_DIR), ("Temp", TEMP_DIR), ("Export", READY_EXPORT_DIR)]:
+    for d_name, p in [("Uploads", STORAGE_DIR / "uploads"), ("Processed", PROCESSED_DIR), ("Temp", TEMP_DIR), ("Export Root", READY_EXPORT_DIR)]:
         report(f"Storage Directory: {d_name}", p.exists(), str(p))
+
+    # Test all 8 Desktop Export category subfolders
+    print("\n--- 1.1 Testing Organized Desktop Export Categories ---")
+    ExportManager.init_export_structure()
+    for exp_dir in ALL_EXPORT_DIRS:
+        report(f"Desktop Export Vault: {exp_dir.name or 'Root'}", exp_dir.exists(), str(exp_dir))
+
+    # Test descriptive filename builders
+    f_short = ExportManager.name_viral_short("Mind Blowing Facts", preset="Aggressive", aspect="9x16")
+    report("Viral Short Name Builder", "VIRAL_SHORT_" in f_short and "9x16" in f_short, f_short)
+    f_full = ExportManager.name_full_video("Car Review 2026", preset="Moderate", aspect="16x9")
+    report("Full Video Name Builder", "EDITED_VIDEO_" in f_full and "16x9" in f_full, f_full)
+    f_reddit = ExportManager.name_reddit_story("r/AskReddit", "Landlord Deposit Scam")
+    report("Reddit Story Name Builder", "REDDIT_STORY_" in f_reddit, f_reddit)
+    f_cover = ExportManager.name_thumbnail_cover("Mind Blowing Facts", style="ViralYellow")
+    report("Cover Thumbnail Name Builder", "THUMBNAIL_COVER_" in f_cover, f_cover)
 
     # 2. TTS Voice List
     print("\n--- 2. Testing TTS Engine ---")

@@ -135,7 +135,7 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
     }, 1500)
   }
 
-  // Handle Accept (Save to Downloads)
+  // Handle Accept (Save to Desktop Exports)
   const handleAcceptVideo = async (item, idx) => {
     setActionLoading((prev) => ({ ...prev, [idx]: 'accepting' }))
     try {
@@ -152,7 +152,7 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
         })
       })
 
-      if (!res.ok) throw new Error('Failed to save to Downloads')
+      if (!res.ok) throw new Error('Failed to save to Desktop')
 
       setResults((prev) =>
         prev.map((v, i) => (i === idx ? { ...v, status: 'accepted' } : v))
@@ -672,7 +672,7 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
                   {isAccepted ? (
                     <div className="status-pill active" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <CheckCircle2 size={14} color="#10b981" />
-                      <span>Saved in ~/Downloads/CR_Remover_Ready/</span>
+                      <span>Saved in Desktop/01_Viral_Shorts/</span>
                     </div>
                   ) : (
                     <div style={{ display: 'flex', gap: '8px' }}>
@@ -700,7 +700,7 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
                         ) : (
                           <ThumbsUp size={14} />
                         )}
-                        <span>Accept & Save to Downloads</span>
+                        <span>Accept & Save to Desktop</span>
                       </button>
 
                       <button

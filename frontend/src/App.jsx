@@ -9,12 +9,14 @@ import AutoViralStudio from './components/AutoViralStudio'
 import AIShortsStudio from './components/AIShortsStudio'
 import AutoPilotStudio from './components/AutoPilotStudio'
 import GeminiKeyModal from './components/GeminiKeyModal'
+import ExportsModal from './components/ExportsModal'
 import { Sparkles } from 'lucide-react'
 
 export default function App() {
   const [activeMode, setActiveMode] = useState('autopilot')
   const [systemInfo, setSystemInfo] = useState(null)
   const [isKeyModalOpen, setIsKeyModalOpen] = useState(false)
+  const [isExportsModalOpen, setIsExportsModalOpen] = useState(false)
   const [poolKeyCount, setPoolKeyCount] = useState(0)
 
 
@@ -189,6 +191,7 @@ export default function App() {
         activeMode={activeMode}
         onModeChange={setActiveMode}
         onOpenKeyModal={() => setIsKeyModalOpen(true)}
+        onOpenExportsModal={() => setIsExportsModalOpen(true)}
         keyCount={poolKeyCount}
       />
 
@@ -234,6 +237,12 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Desktop Exports Vault Modal */}
+      <ExportsModal
+        isOpen={isExportsModalOpen}
+        onClose={() => setIsExportsModalOpen(false)}
+      />
 
       {/* Gemini Multi-Key Pool Manager Modal */}
       <GeminiKeyModal

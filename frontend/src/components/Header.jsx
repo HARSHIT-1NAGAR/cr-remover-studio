@@ -1,5 +1,5 @@
 import React from 'react'
-import { Clapperboard, Sparkles, Bot, Shield, Zap, Cpu, Rocket, Key } from 'lucide-react'
+import { Clapperboard, Sparkles, Bot, Shield, Zap, Cpu, Rocket, Key, FolderOpen } from 'lucide-react'
 
 const MODES = [
   { key: 'autopilot', label: '⚡ Auto-Pilot Factory', icon: Rocket },
@@ -9,7 +9,7 @@ const MODES = [
 ]
 
 
-export default function Header({ systemInfo, activeMode, onModeChange, onOpenKeyModal, keyCount = 0 }) {
+export default function Header({ systemInfo, activeMode, onModeChange, onOpenKeyModal, onOpenExportsModal, keyCount = 0 }) {
   return (
     <header className="app-header">
       {/* Brand */}
@@ -41,8 +41,32 @@ export default function Header({ systemInfo, activeMode, onModeChange, onOpenKey
         ))}
       </nav>
 
-      {/* Hardware Status & Gemini Key Pool */}
+      {/* Hardware Status, Desktop Vault & Gemini Key Pool */}
       <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Desktop Exports Vault Button */}
+        <button
+          onClick={onOpenExportsModal}
+          style={{
+            background: 'rgba(56, 189, 248, 0.1)',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            color: '#7dd3fc',
+            padding: '6px 12px',
+            borderRadius: 'var(--radius-full, 9999px)',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 0 10px rgba(56, 189, 248, 0.15)'
+          }}
+          title="Open Organized Desktop Exports Vault (~/Desktop/CR_Remover_Exports/)"
+        >
+          <FolderOpen size={13} color="#38bdf8" />
+          <span>Desktop Exports</span>
+        </button>
+
         {/* Gemini Multi-Key Pool Button */}
         <button
           onClick={onOpenKeyModal}

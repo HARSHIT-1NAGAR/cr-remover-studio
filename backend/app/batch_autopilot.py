@@ -15,7 +15,11 @@ import zipfile
 import shutil
 from typing import List, Dict, Any, Optional, Callable
 
-from app.config import STORAGE_DIR, TEMP_DIR, PROCESSED_DIR, READY_EXPORT_DIR
+from app.config import (
+    STORAGE_DIR, TEMP_DIR, PROCESSED_DIR, READY_EXPORT_DIR,
+    EXPORTS_BATCH_DIR, EXPORTS_VIRAL_SHORTS_DIR, EXPORTS_THUMBNAILS_DIR, EXPORTS_METADATA_DIR
+)
+from app.export_manager import ExportManager
 from app.editor_schemas import AIShortsRenderRequest, SceneBlock, WordTiming
 from app.tts_engine import TTSEngine
 from app.scene_director import SceneDirector
@@ -177,10 +181,11 @@ class BatchAutoPilotEngine:
         selected_topics = topics_pool[:count]
         rendered_items: List[Dict[str, Any]] = []
 
-        # Batch export destination folder
+        # Batch export destination folder inside 08_Batch_Campaigns
+        ExportManager.init_export_structure()
         timestamp_str = time.strftime("%Y%m%d_%H%M")
-        batch_folder_name = f"Batch_{niche['id']}_{timestamp_str}"
-        batch_export_dir = READY_EXPORT_DIR / batch_folder_name
+        batch_folder_name = f"Campaign_{niche['id']}_{timestamp_str}"
+        batch_export_dir = EXPORTS_BATCH_DIR / batch_folder_name
         batch_export_dir.mkdir(parents=True, exist_ok=True)
 
         total_videos = len(selected_topics)
@@ -297,19 +302,33 @@ class BatchAutoPilotEngine:
                 gemini_api_key=gemini_api_key
             )
 
-            # 7. Copy to ~/Downloads/CR_Remover_Ready/Batch_...
-            final_vid_name = f"Short_{idx+1:02d}_{re.sub(r'[^a-zA-Z0-9]', '_', title)[:30]}.mp4"
+            # 7. Standardized Descriptive Filenames
+            clean_t = ExportManager.clean_name(title, max_chars=30)
+            final_vid_name = f"VIRAL_SHORT_Ep{idx+1:02d}_{clean_t}_9x16.mp4"
+            final_cover_name = f"THUMBNAIL_COVER_Ep{idx+1:02d}_{clean_t}_1080x1920.jpg"
+            final_info_name = f"METADATA_SEO_Ep{idx+1:02d}_{clean_t}.txt"
+
+            # Save in batch folder (08_Batch_Campaigns)
             dest_vid = batch_export_dir / final_vid_name
-            dest_cover = batch_export_dir / f"Short_{idx+1:02d}_COVER.jpg"
-            dest_info = batch_export_dir / f"Short_{idx+1:02d}_METADATA_INFO.txt"
+            dest_cover = batch_export_dir / final_cover_name
+            dest_info = batch_export_dir / final_info_name
 
             shutil.copyfile(out_video, dest_vid)
             if cover_path.exists():
                 shutil.copyfile(cover_path, dest_cover)
             MetaGenerator.save_info_file(dest_info, meta, final_vid_name)
 
+            # Also save copies directly into organized category vaults
+            try:
+                cat_vid = EXPORTS_VIRAL_SHORTS_DIR / final_vid_name
+                shutil.copyfile(out_video, cat_vid)
+                if cover_path.exists():
+                    shutil.copyfile(cover_path, EXPORTS_THUMBNAILS_DIR / final_cover_name)
+                MetaGenerator.save_info_file(EXPORTS_METADATA_DIR / final_info_name, meta, final_vid_name)
+            except Exception as e:
+                print(f"[BatchAutoPilot] Warning copying to categories: {e}")
+
             # Calculate publication day & schedule
-            # e.g. Day 1 at 12:00 PM, Day 1 at 06:00 PM (2 posts/day)
             day_num = (idx // 2) + 1
             post_slot = "12:00 PM (Peak Lunch)" if (idx % 2 == 0) else "06:30 PM (Evening Prime)"
 
@@ -331,7 +350,7 @@ class BatchAutoPilotEngine:
         # Batch completed
         if progress_callback:
             progress_callback(
-                f"Batch Complete! Generated {len(rendered_items)} Ready-to-Publish Shorts in Downloads.",
+                f"Batch Complete! Generated {len(rendered_items)} Shorts organized on Desktop.",
                 100,
                 {"completed": True, "count": len(rendered_items)}
             )

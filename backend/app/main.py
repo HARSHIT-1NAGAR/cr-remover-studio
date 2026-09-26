@@ -17,8 +17,12 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import (
     UPLOADS_DIR, PROCESSED_DIR, TEMP_DIR, READY_EXPORT_DIR,
+    EXPORTS_VIRAL_SHORTS_DIR, EXPORTS_FULL_VIDEOS_DIR, EXPORTS_REDDIT_STORIES_DIR,
+    EXPORTS_PODCAST_CLIPS_DIR, EXPORTS_THUMBNAILS_DIR, EXPORTS_AUDIO_STEMS_DIR,
+    EXPORTS_METADATA_DIR, EXPORTS_BATCH_DIR, ALL_EXPORT_DIRS,
     FRONTEND_DIST_DIR, HAS_NVENC, is_nvenc_available, BACKEND_DIR, STORAGE_DIR
 )
+from app.export_manager import ExportManager
 from app.schemas import (
     TransformParams, JobStatus, StageType, PresetType,
     DownloadUrlRequest, AutoViralRequest, AcceptVideoRequest, RejectVideoRequest
@@ -31,7 +35,7 @@ from app.editor_schemas import (
     GenerateTTSRequest, ParseScriptRequest, GenerateScriptFromTopicRequest, AIShortsRenderRequest,
     BatchAutoPilotRequest, GenerateThumbnailRequest, GenerateMetadataRequest, RedditStoryRequest, StockSearchRequest,
     PodcastDialogueRequest, TrendToScriptRequest, TelegramBotRequest,
-    GeminiPoolKeysRequest, GeminiTestKeysRequest, GeminiKeyRemoveRequest
+    GeminiPoolKeysRequest, GeminiTestKeysRequest, GeminiKeyRemoveRequest, ExportVideoRequest
 )
 from app.gemini_pool import gemini_pool, parse_raw_keys
 from app.tts_engine import TTSEngine
@@ -373,47 +377,36 @@ async def get_auto_viral_status(job_id: str):
 
 @app.post("/api/auto-viral/accept")
 async def accept_viral_video(payload: AcceptVideoRequest):
-    """Accepts a reviewed video, saves clean MP4 & INFO.txt to ~/Downloads/CR_Remover_Ready/."""
+    """Accepts a reviewed video, saves clean MP4 & metadata to ~/Desktop/CR_Remover_Exports/01_Viral_Shorts/."""
     source_file = PROCESSED_DIR / payload.clean_id
     if not source_file.exists():
         raise HTTPException(status_code=404, detail="Processed video file not found")
 
-    dest_video = READY_EXPORT_DIR / payload.filename
-    dest_info = READY_EXPORT_DIR / f"{payload.filename.replace('.mp4', '')}_INFO.txt"
+    # Build standardized descriptive filename
+    title_seed = payload.original_title or (payload.titles[0] if payload.titles else payload.filename)
+    descriptive_name = ExportManager.name_viral_short(title_seed, preset="AutoViral", aspect="9x16")
 
-    # Copy video to Downloads
-    shutil.copyfile(source_file, dest_video)
+    meta_payload = {
+        "titles": payload.titles if payload.titles else [title_seed],
+        "hook": payload.hook,
+        "description": payload.description,
+        "tags": ["viral", "shorts", "trending", "youtube_shorts", "reels"]
+    }
 
-    # Write info file
-    info_content = f"""===================================================================
-🎬 READY-TO-UPLOAD SHORT
-Original Title: {payload.original_title or 'Viral Short'}
-Clean Video File: {payload.filename}
-Export Location: {dest_video}
-===================================================================
-
-🔥 3 VIRAL TITLE OPTIONS (Choose one):
-1. {payload.titles[0] if len(payload.titles) > 0 else 'Wait for it...'}
-2. {payload.titles[1] if len(payload.titles) > 1 else 'Shocking truth!'}
-3. {payload.titles[2] if len(payload.titles) > 2 else 'You won’t believe this'}
-
-📌 PINNED COMMENT HOOK:
-{payload.hook or 'Comment your thoughts below!'}
-
-📝 DESCRIPTION & HASHTAGS:
-{payload.description or '#shorts #viral #trending'}
-
-===================================================================
-⚡ Transformed with CR Remover Studio (Anti-Fingerprint Applied)
-"""
-    with open(dest_info, "w", encoding="utf-8") as f:
-        f.write(info_content)
+    # Export to categorized desktop folder
+    exported = ExportManager.export_video_to_category(
+        source_video_path=source_file,
+        category="viral_shorts",
+        descriptive_filename=descriptive_name,
+        metadata_dict=meta_payload
+    )
 
     return {
         "status": "saved",
-        "video_path": str(dest_video),
-        "info_path": str(dest_info),
-        "filename": payload.filename
+        "video_path": exported["video_path"],
+        "info_path": exported.get("metadata_path"),
+        "filename": descriptive_name,
+        "category": exported.get("category", "01_Viral_Shorts")
     }
 
 
@@ -605,12 +598,28 @@ async def stream_media(folder: str, filename: str):
         base_dir = UPLOADS_DIR
     elif folder == "processed":
         base_dir = PROCESSED_DIR
-    elif folder == "ready":
+    elif folder in ("ready", "exports"):
         base_dir = READY_EXPORT_DIR
+    elif folder in ("viral_shorts", "01_Viral_Shorts"):
+        base_dir = EXPORTS_VIRAL_SHORTS_DIR
+    elif folder in ("full_videos", "02_Full_Edited_Videos"):
+        base_dir = EXPORTS_FULL_VIDEOS_DIR
+    elif folder in ("reddit", "03_Reddit_Stories"):
+        base_dir = EXPORTS_REDDIT_STORIES_DIR
+    elif folder in ("podcast", "04_Podcast_Clips"):
+        base_dir = EXPORTS_PODCAST_CLIPS_DIR
+    elif folder in ("thumbnails", "05_Thumbnails_Covers"):
+        base_dir = EXPORTS_THUMBNAILS_DIR
+    elif folder in ("audio", "06_Audio_Stems_Voice"):
+        base_dir = EXPORTS_AUDIO_STEMS_DIR
+    elif folder in ("metadata", "07_Metadata_Captions"):
+        base_dir = EXPORTS_METADATA_DIR
+    elif folder in ("batch", "08_Batch_Campaigns"):
+        base_dir = EXPORTS_BATCH_DIR
     elif folder == "temp":
         base_dir = TEMP_DIR
     elif folder == "assets":
-        base_dir = ASSETS_DIR
+        base_dir = STORAGE_DIR / "assets"
     else:
         raise HTTPException(status_code=400, detail="Invalid folder")
 
@@ -873,7 +882,7 @@ async def synthesize_podcast_audio(payload: PodcastDialogueRequest):
 
 @app.post("/api/podcast/render-short")
 async def render_podcast_short_endpoint(payload: PodcastDialogueRequest):
-    """Generates and fully renders a 2-person podcast split-screen Short."""
+    """Generates and fully renders a 2-person podcast split-screen Short with desktop export."""
     dialogue = await PodcastShortsGenerator.generate_dialogue(
         topic=payload.topic,
         style=payload.style,
@@ -884,17 +893,33 @@ async def render_podcast_short_endpoint(payload: PodcastDialogueRequest):
         host_voice=payload.host_voice,
         guest_voice=payload.guest_voice
     )
+    
+    # Export to 04_Podcast_Clips/
+    descriptive_name = ExportManager.name_podcast_short(dialogue.get("title", payload.topic))
+    exported = ExportManager.export_video_to_category(
+        source_video_path=out_video,
+        category="podcast",
+        descriptive_filename=descriptive_name,
+        metadata_dict={
+            "titles": [dialogue.get("title", payload.topic)],
+            "hook": "Wait until you hear this perspective...",
+            "description": f"AI Podcast Debate on {payload.topic} #podcast #debate #shorts"
+        }
+    )
+
     return {
         "status": "completed",
         "video_url": f"/api/media/processed/{out_video.name}",
-        "filename": out_video.name,
-        "title": dialogue.get("title", "Podcast Short")
+        "filename": descriptive_name,
+        "title": dialogue.get("title", "Podcast Short"),
+        "export_path": exported["video_path"],
+        "category": "04_Podcast_Clips"
     }
 
 
 @app.post("/api/reddit/render-short")
 async def render_reddit_short_endpoint(payload: RedditStoryRequest):
-    """Generates and fully renders a viral Reddit drama story Short over gameplay."""
+    """Generates and fully renders a viral Reddit drama story Short over gameplay with desktop export."""
     story = await RedditStoryGenerator.generate_story(
         subreddit=payload.subreddit,
         custom_prompt=payload.custom_prompt,
@@ -905,12 +930,97 @@ async def render_reddit_short_endpoint(payload: RedditStoryRequest):
         voice_name="en-US-GuyNeural",
         gameplay_broll="minecraft_parkour"
     )
+
+    # Export to 03_Reddit_Stories/
+    descriptive_name = ExportManager.name_reddit_story(payload.subreddit, story.get("title", "Story"))
+    exported = ExportManager.export_video_to_category(
+        source_video_path=out_video,
+        category="reddit",
+        descriptive_filename=descriptive_name,
+        metadata_dict={
+            "titles": [story.get("title", "Reddit Story")],
+            "hook": "This actually happened to someone...",
+            "description": f"Reddit story from {payload.subreddit} #redditstories #askreddit #drama"
+        }
+    )
+
     return {
         "status": "completed",
         "video_url": f"/api/media/processed/{out_video.name}",
-        "filename": out_video.name,
-        "title": story.get("title", "Reddit Story")
+        "filename": descriptive_name,
+        "title": story.get("title", "Reddit Story"),
+        "export_path": exported["video_path"],
+        "category": "03_Reddit_Stories"
     }
+
+
+# =====================================================================
+# ORGANIZED DESKTOP EXPORTS & ASSET EXPLORER ENDPOINTS
+# =====================================================================
+
+@app.post("/api/exports/export-video")
+async def export_single_video(payload: ExportVideoRequest):
+    """
+    1-Click exports a processed video into the appropriate Desktop category folder
+    with a crystal-clear, self-describing filename.
+    """
+    # 1. Locate the processed video file
+    matching = [f for f in PROCESSED_DIR.iterdir() if payload.job_id in f.name and f.is_file()]
+    if not matching:
+        job = JOBS.get(payload.job_id)
+        if job and job.output_filename:
+            f = PROCESSED_DIR / job.output_filename
+            if f.exists():
+                matching = [f]
+
+    if not matching:
+        raise HTTPException(status_code=404, detail="Processed video file not found")
+
+    source_video = matching[0]
+
+    # 2. Build standardized descriptive name
+    title = payload.title or source_video.name
+    aspect = payload.aspect or "16x9"
+    preset = payload.preset or "youtube_bypass"
+
+    if payload.category in ("viral_shorts", "01_Viral_Shorts") or aspect == "9x16":
+        descriptive_name = ExportManager.name_viral_short(title, preset=preset, aspect="9x16")
+        cat_target = "viral_shorts"
+    else:
+        descriptive_name = ExportManager.name_full_video(title, preset=preset, aspect=aspect)
+        cat_target = "full_videos"
+
+    # 3. Export to Desktop organized folder
+    exported = ExportManager.export_video_to_category(
+        source_video_path=source_video,
+        category=cat_target,
+        descriptive_filename=descriptive_name,
+        metadata_dict={
+            "titles": [title],
+            "description": f"Processed with CR Remover Studio ({preset}) #clean #video"
+        }
+    )
+
+    return {
+        "status": "exported",
+        "video_path": exported["video_path"],
+        "filename": descriptive_name,
+        "category": exported.get("category", cat_target),
+        "folder": exported.get("folder")
+    }
+
+
+@app.post("/api/exports/open-folder")
+@app.post("/api/exports/open-desktop-folder")
+async def open_desktop_exports_folder():
+    """Opens ~/Desktop/CR_Remover_Exports/ in the native OS file explorer."""
+    return ExportManager.open_exports_folder()
+
+
+@app.get("/api/exports/summary")
+async def get_desktop_exports_summary():
+    """Returns a full categorized overview and file tree of all desktop exports."""
+    return ExportManager.get_exports_summary()
 
 
 @app.post("/api/broll/upload")

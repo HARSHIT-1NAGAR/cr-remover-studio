@@ -819,9 +819,26 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                   Rendered Shorts & Metadata Queue
                 </h3>
                 {batchResults.length > 0 && (
-                  <span style={{ fontSize: 'var(--text-xs)', color: 'var(--green)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <Check size={14} /> Ready in ~/Downloads
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--green)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <Check size={14} /> Saved in ~/Desktop/CR_Remover_Exports/
+                    </span>
+                    <button
+                      onClick={() => fetch('/api/exports/open-desktop-folder', { method: 'POST' })}
+                      style={{
+                        background: 'rgba(56, 189, 248, 0.15)',
+                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                        color: '#38bdf8',
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      📂 Open Folder
+                    </button>
+                  </div>
                 )}
               </div>
 

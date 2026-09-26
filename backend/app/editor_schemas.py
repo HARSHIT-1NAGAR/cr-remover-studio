@@ -172,4 +172,13 @@ class GeminiKeyRemoveRequest(BaseModel):
     key: str = Field(..., description="Key or masked key identifier to remove")
 
 
+class ExportVideoRequest(BaseModel):
+    job_id: str = Field(..., description="The job ID of the processed video")
+    title: Optional[str] = Field(default="", description="Descriptive title for the export")
+    preset: Optional[str] = Field(default="youtube_bypass", description="Preset name or style")
+    category: Optional[str] = Field(default="full_videos", description="Destination category (full_videos, viral_shorts, etc.)")
+    aspect: Optional[str] = Field(default="16x9", description="Aspect ratio (16x9 or 9x16)")
+
+
+
 

@@ -839,9 +839,9 @@ async def generate_reddit_story(payload: RedditStoryRequest):
 
 
 @app.get("/api/trends/live")
-async def get_live_trends():
+async def get_live_trends(category: str = "all", region: str = "US"):
     """Fetches real-time viral trends from Google Trends and news feeds."""
-    return await TrendHarvester.fetch_live_trends()
+    return await TrendHarvester.fetch_live_trends(category=category, region=region)
 
 
 @app.post("/api/trends/to-script")

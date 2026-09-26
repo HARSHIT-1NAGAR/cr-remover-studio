@@ -88,6 +88,8 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
   // Copy Feedback state
   const [copiedKey, setCopiedKey] = useState(null)
 
+  const [selectedTrendCategory, setSelectedTrendCategory] = useState('all')
+
   // Load Initial Data
   useEffect(() => {
     fetch('/api/autopilot/niches')
@@ -105,7 +107,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
       .then(data => { if (Array.isArray(data)) setBrollCategories(data) })
       .catch(console.error)
 
-    fetchTrends()
+    fetchTrends('all')
 
     const savedToken = localStorage.getItem('cr_tg_token')
     const savedChat = localStorage.getItem('cr_tg_chat')
@@ -116,10 +118,10 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
     if (savedGeminiKeys) setGeminiApiKey(savedGeminiKeys)
   }, [])
 
-  const fetchTrends = async () => {
+  const fetchTrends = async (cat = selectedTrendCategory) => {
     setIsLoadingTrends(true)
     try {
-      const res = await fetch('/api/trends/live')
+      const res = await fetch(`/api/trends/live?category=${cat}&_t=${Date.now()}`)
       const data = await res.json()
       if (Array.isArray(data)) setLiveTrends(data)
     } catch (e) {
@@ -127,6 +129,11 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
     } finally {
       setIsLoadingTrends(false)
     }
+  }
+
+  const handleCategoryChange = (cat) => {
+    setSelectedTrendCategory(cat)
+    fetchTrends(cat)
   }
 
   // Audition BGM
@@ -971,42 +978,77 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
               <div>
                 <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                   <TrendingUp size={16} color="var(--accent)" />
-                  Real-time Google Trends & Viral News
+                  Real-time Google Trends & Live Viral Feeds
                 </h3>
-                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Updated live from global RSS search feeds</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                  {liveTrends.length} live stories harvested • Real-time RSS search spikes
+                </span>
               </div>
               <button
-                onClick={fetchTrends}
+                onClick={() => fetchTrends(selectedTrendCategory)}
                 disabled={isLoadingTrends}
-                style={{ padding: '6px 10px', fontSize: '11px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-primary)', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                style={{
+                  padding: '6px 12px', fontSize: '11px', background: 'var(--bg-card)',
+                  border: '1px solid var(--border)', color: 'var(--text-primary)',
+                  borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex',
+                  alignItems: 'center', gap: '5px', fontWeight: 600,
+                  boxShadow: 'var(--shadow-xs)'
+                }}
               >
                 <RefreshCw size={12} className={isLoadingTrends ? 'spin' : ''} />
-                <span>Refresh</span>
+                <span>{isLoadingTrends ? 'Harvesting...' : 'Live Refresh'}</span>
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', maxHeight: '500px', overflowY: 'auto' }}>
+            {/* Category Filter Pills */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+              {[
+                { id: 'all', label: '🌐 All Trends' },
+                { id: 'tech', label: '🚀 Tech & AI' },
+                { id: 'google_trends', label: '🔍 Google Searches' },
+                { id: 'science', label: '🔬 Science & Space' },
+                { id: 'entertainment', label: '🎬 Pop Culture' }
+              ].map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => handleCategoryChange(c.id)}
+                  style={{
+                    padding: '4px 9px', borderRadius: 'var(--radius-full)',
+                    background: selectedTrendCategory === c.id ? 'var(--accent)' : 'var(--bg-elevated)',
+                    color: selectedTrendCategory === c.id ? '#ffffff' : 'var(--text-secondary)',
+                    border: selectedTrendCategory === c.id ? '1px solid var(--accent)' : '1px solid var(--border)',
+                    fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                    transition: 'all var(--transition)'
+                  }}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', maxHeight: '480px', overflowY: 'auto' }}>
               {liveTrends.map((t, idx) => (
                 <div
                   key={idx}
                   onClick={() => handleTrendToScript(t)}
                   style={{
-                    padding: '10px', borderRadius: 'var(--radius-sm)',
-                    background: selectedTrend?.title === t.title ? 'var(--bg-secondary)' : 'rgba(255,255,255,0.02)',
-                    border: `1px solid ${selectedTrend?.title === t.title ? 'var(--accent)' : 'var(--border)'}`,
-                    cursor: 'pointer', transition: 'all var(--transition)'
+                    padding: '10px 12px', borderRadius: 'var(--radius-sm)',
+                    background: selectedTrend?.title === t.title ? 'var(--accent-muted)' : 'var(--bg-elevated)',
+                    border: selectedTrend?.title === t.title ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                    cursor: 'pointer', transition: 'all var(--transition)',
+                    boxShadow: selectedTrend?.title === t.title ? '0 0 0 1px var(--accent-border)' : 'none'
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                    <span style={{ fontSize: '10px', background: 'var(--accent-glow)', color: 'var(--accent)', padding: '1px 6px', borderRadius: '3px', fontWeight: 700 }}>
-                      🔥 {t.traffic}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '10px', background: 'var(--accent-glow)', color: 'var(--accent)', padding: '1px 7px', borderRadius: '3px', fontWeight: 700 }}>
+                      {t.traffic || '🔥 Trending'}
                     </span>
                     <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.source}</span>
                   </div>
-                  <h4 style={{ fontSize: 'var(--text-xs)', fontWeight: 700, margin: '4px 0 2px 0', color: 'var(--text-primary)' }}>
+                  <h4 style={{ fontSize: 'var(--text-xs)', fontWeight: 700, margin: '2px 0 3px 0', color: selectedTrend?.title === t.title ? 'var(--accent)' : 'var(--text-primary)', lineHeight: 1.3 }}>
                     {t.title}
                   </h4>
-                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.3 }}>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.35 }}>
                     {t.summary}
                   </p>
                 </div>

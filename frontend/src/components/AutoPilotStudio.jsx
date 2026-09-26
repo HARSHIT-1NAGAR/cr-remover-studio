@@ -631,26 +631,27 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                   Batch Video Quantity
                 </h3>
                 <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--accent)' }}>
-                  {batchCount} Shorts
+                  {batchCount === 1 ? '1 Short' : `${batchCount} Shorts`}
                 </span>
               </div>
 
               {/* Quantity buttons */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-2)' }}>
-                {[3, 5, 10, 15].map(cnt => (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 'var(--space-2)' }}>
+                {[1, 3, 5, 10, 15].map(cnt => (
                   <button
                     key={cnt}
                     onClick={() => setBatchCount(cnt)}
                     style={{
-                      padding: '8px', borderRadius: 'var(--radius-sm)',
+                      padding: '8px 4px', borderRadius: 'var(--radius-sm)',
                       background: batchCount === cnt ? 'var(--accent)' : 'var(--bg-elevated)',
                       color: batchCount === cnt ? '#ffffff' : 'var(--text-primary)',
                       border: batchCount === cnt ? '1.5px solid var(--accent)' : '1px solid var(--border)',
                       fontWeight: 600, fontSize: 'var(--text-xs)', cursor: 'pointer',
-                      transition: 'all var(--transition)'
+                      transition: 'all var(--transition)',
+                      textAlign: 'center'
                     }}
                   >
-                    {cnt} Videos
+                    {cnt === 1 ? '1 Video' : `${cnt} Videos`}
                   </button>
                 ))}
               </div>
@@ -834,7 +835,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                 ) : (
                   <>
                     <Rocket size={16} />
-                    <span>⚡ Launch 1-Click Auto-Pilot ({batchCount} Shorts)</span>
+                    <span>⚡ Launch 1-Click Auto-Pilot ({batchCount === 1 ? '1 Short' : `${batchCount} Shorts`})</span>
                   </>
                 )}
               </button>

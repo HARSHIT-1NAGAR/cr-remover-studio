@@ -106,6 +106,8 @@ class BatchAutoPilotRequest(BaseModel):
     bgm_track: Optional[str] = None
     subtitle_style: Optional[str] = None
     broll_category: Optional[str] = None
+    duration_mode: str = Field(default="auto", description="quick_30s | standard_50s | deep_75s | auto")
+    target_duration: Optional[int] = Field(default=None, ge=15, le=120)
     custom_topics: Optional[List[str]] = None
     gemini_api_key: Optional[str] = ""
 

@@ -22,6 +22,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
   const [selectedBroll, setSelectedBroll] = useState('neural_brain')
   const [geminiApiKey, setGeminiApiKey] = useState('')
   const [customTopics, setCustomTopics] = useState('')
+  const [durationMode, setDurationMode] = useState('auto')
   
   // Live Audio Auditioning
   const [playingBgm, setPlayingBgm] = useState(null)
@@ -230,6 +231,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
           bgm_track: selectedBgm,
           subtitle_style: selectedSubStyle,
           broll_category: selectedBroll,
+          duration_mode: durationMode,
           custom_topics: topicsArr.length > 0 ? topicsArr : null,
           gemini_api_key: geminiApiKey || ''
         })
@@ -651,6 +653,45 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                     {cnt} Videos
                   </button>
                 ))}
+              </div>
+
+              {/* Story Depth & Target Duration Selector */}
+              <div style={{ marginTop: 'var(--space-2)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Clock size={13} color="var(--accent)" />
+                    Story Depth & Target Duration
+                  </label>
+                  <span style={{ fontSize: '10px', color: 'var(--accent)', fontWeight: 700 }}>
+                    {durationMode === 'quick_30s' ? '⚡ ~30s (Rapid Hook)' : durationMode === 'standard_50s' ? '🎯 ~50s (Viral Gold)' : durationMode === 'deep_75s' ? '📖 ~75s (Deep Narrative)' : '🧠 Auto (Full Depth Fact)'}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                  {[
+                    { id: 'auto', label: '🧠 Auto Full Depth', desc: 'Complete Story' },
+                    { id: 'standard_50s', label: '🎯 Viral Standard', desc: '~50s High Retention' },
+                    { id: 'deep_75s', label: '📖 Deep Dive', desc: '~75s Full Facts' },
+                    { id: 'quick_30s', label: '⚡ Quick Hit', desc: '~30s Fast Punch' }
+                  ].map(d => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => setDurationMode(d.id)}
+                      style={{
+                        padding: '6px 4px', borderRadius: 'var(--radius-sm)',
+                        background: durationMode === d.id ? 'var(--accent)' : 'var(--bg-elevated)',
+                        color: durationMode === d.id ? '#ffffff' : 'var(--text-primary)',
+                        border: durationMode === d.id ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                        fontSize: '11px', fontWeight: 600, cursor: 'pointer',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                        transition: 'all var(--transition)'
+                      }}
+                    >
+                      <span>{d.label}</span>
+                      <span style={{ fontSize: '9px', opacity: 0.85, fontWeight: 400 }}>{d.desc}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {/* Advanced Customization Rows */}

@@ -740,6 +740,8 @@ async def start_batch_autopilot(
                 bgm_track=payload.bgm_track,
                 subtitle_style=payload.subtitle_style,
                 broll_category=payload.broll_category,
+                duration_mode=payload.duration_mode,
+                target_duration=payload.target_duration,
                 custom_topics=payload.custom_topics,
                 gemini_api_key=payload.gemini_api_key or "",
                 progress_callback=cb

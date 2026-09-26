@@ -123,62 +123,56 @@ class BRollHarvester:
         Synthesizes high-aesthetic 1080x1920 motion background using specialized FFmpeg filters.
         """
         output_path.parent.mkdir(parents=True, exist_ok=True)
+        dur = max(2.0, duration)
         
-        # Specialized shader/filter recipe per category
+        # High-aesthetic cinematic motion recipes per category
         if category_id == "minecraft_parkour":
-            # Fast geometric blocks pattern with vivid green & stone accents
             filter_str = (
-                f"testsrc2=size=1080x1920:rate=60:duration={duration},"
-                f"lutrgb='r=val*0.2:g=val*0.8:b=val*0.3',"
-                f"hue=s=1.8:b=0.1,boxblur=2:1"
+                f"gradients=s=1080x1920:d={dur}:r=30:nb_colors=4:"
+                f"c0=0x022c22:c1=0x064e3b:c2=0x047857:c3=0x052e16:type=linear:speed=0.04,"
+                f"vignette=PI/2.5,noise=c1s=3:c1f=t+u,eq=contrast=1.15:saturation=1.4"
             )
         elif category_id == "subway_surfers":
-            # Vibrant orange/amber perspective motion
             filter_str = (
-                f"mptestsrc=rate=60:duration={duration},"
-                f"scale=1080:1920:flags=lanczos,hue=h=30:s=1.7,"
-                f"boxblur=15:3"
+                f"gradients=s=1080x1920:d={dur}:r=30:nb_colors=4:"
+                f"c0=0x1c1917:c1=0x7c2d12:c2=0xc2410c:c3=0xea580c:type=linear:speed=0.04,"
+                f"vignette=PI/2.5,noise=c1s=3:c1f=t+u,eq=contrast=1.15:saturation=1.4"
             )
         elif category_id == "satisfying_asmr":
-            # Soft pastel pink/purple fluid motion
             filter_str = (
-                f"testsrc=size=1080x1920:rate=60:duration={duration},"
-                f"hue=h=300:s=1.4,boxblur=45:10,gblur=sigma=15"
+                f"gradients=s=1080x1920:d={dur}:r=30:nb_colors=4:"
+                f"c0=0x180828:c1=0x4a044e:c2=0x701a75:c3=0x831843:type=spiral:speed=0.03,"
+                f"vignette=PI/2.6,noise=c1s=2:c1f=t+u,eq=contrast=1.08:saturation=1.3"
             )
         elif category_id == "dark_cyberpunk":
-            # Dark neon cyan/magenta vignette
             filter_str = (
-                f"smptebars=size=1080x1920:rate=60:duration={duration},"
-                f"hue=h=180:s=2.0,boxblur=60:15,curves=all='0/0 0.5/0.2 1/0.9',"
-                f"vignette=PI/3"
+                f"gradients=s=1080x1920:d={dur}:r=30:nb_colors=4:"
+                f"c0=0x070712:c1=0x1e0836:c2=0x0f172a:c3=0x3b0764:type=radial:speed=0.03,"
+                f"vignette=PI/2.4,noise=c1s=3:c1f=t+u,eq=contrast=1.1:saturation=1.3"
             )
         elif category_id == "space_nebula":
-            # Deep purple cosmic particle vortex
             filter_str = (
-                f"testsrc=size=1080x1920:rate=60:duration={duration},"
-                f"lutrgb='r=val*0.6:g=val*0.2:b=val*0.9',"
-                f"boxblur=30:10,vignette=PI/2.5"
+                f"gradients=s=1080x1920:d={dur}:r=30:nb_colors=4:"
+                f"c0=0x030712:c1=0x2e1065:c2=0x172554:c3=0x581c87:type=spiral:speed=0.02,"
+                f"vignette=PI/2.2,noise=c1s=4:c1f=t+u,eq=contrast=1.15:saturation=1.4"
             )
         elif category_id == "neural_brain":
-            # Cyan digital grid & matrix
             filter_str = (
-                f"testsrc2=size=1080x1920:rate=60:duration={duration},"
-                f"lutrgb='r=0:g=val*0.8:b=val*1.0',"
-                f"boxblur=10:4,curves=all='0/0 0.3/0.1 1/1'"
+                f"gradients=s=1080x1920:d={dur}:r=30:nb_colors=4:"
+                f"c0=0x020617:c1=0x083344:c2=0x0e7490:c3=0x0369a1:type=circular:speed=0.025,"
+                f"vignette=PI/2.5,noise=c1s=3:c1f=t+u,eq=contrast=1.12:saturation=1.35"
             )
         elif category_id == "luxury_wealth":
-            # Gold amber shimmering glow
             filter_str = (
-                f"testsrc=size=1080x1920:rate=60:duration={duration},"
-                f"lutrgb='r=val*1.0:g=val*0.75:b=val*0.1',"
-                f"boxblur=50:12,vignette=PI/3"
+                f"gradients=s=1080x1920:d={dur}:r=30:nb_colors=4:"
+                f"c0=0x0f0b03:c1=0x451a03:c2=0x78350f:c3=0xb45309:type=radial:speed=0.02,"
+                f"vignette=PI/2.3,noise=c1s=3:c1f=t+u,eq=contrast=1.2:saturation=1.3"
             )
         else: # dark_ocean
-            # Deep abyss navy blue wave motion
             filter_str = (
-                f"testsrc2=size=1080x1920:rate=60:duration={duration},"
-                f"lutrgb='r=val*0.05:g=val*0.2:b=val*0.6',"
-                f"boxblur=40:8,vignette=PI/3"
+                f"gradients=s=1080x1920:d={dur}:r=30:nb_colors=4:"
+                f"c0=0x020617:c1=0x082f49:c2=0x0c4a6e:c3=0x0369a1:type=radial:speed=0.02,"
+                f"vignette=PI/2.2,noise=c1s=3:c1f=t+u,eq=contrast=1.15:saturation=1.2"
             )
 
         cmd = [
@@ -188,8 +182,8 @@ class BRollHarvester:
             "-c:v", "libx264",
             "-preset", "ultrafast",
             "-pix_fmt", "yuv420p",
-            "-t", str(duration),
-            "-r", "60",
+            "-t", str(dur),
+            "-r", "30",
             str(output_path)
         ]
 

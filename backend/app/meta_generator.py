@@ -8,6 +8,7 @@ from pathlib import Path
 import os
 import re
 import json
+import asyncio
 from typing import Dict, Any, List, Optional
 from app.gemini_pool import gemini_pool
 
@@ -26,53 +27,63 @@ class MetaGenerator:
         """
         Generates comprehensive SEO metadata for YouTube Shorts & Facebook Reels.
         """
+        clean_topic = topic.strip().title()
+        niche_tag = niche.replace("_", "").lower()
         prompt = (
-            f"You are the #1 algorithmic growth strategist for YouTube Shorts and Facebook Reels.\n"
+            f"You are the top YouTube Shorts and TikTok algorithmic growth consultant for 10M+ subscriber creators.\n"
             f"Topic: {topic}\n"
             f"Niche: {niche}\n"
-            f"Script/Context: {script_summary}\n\n"
-            f"Generate viral metadata formatted in JSON ONLY with this structure:\n"
+            f"Script Context: {script_summary}\n\n"
+            f"Create a high-CTR, algorithm-optimized metadata package in JSON ONLY:\n"
             f"{{\n"
-            f'  "yt_titles": ["Title 1 (<50 chars, high curiosity)", "Title 2 (shock value)", "Title 3 (question hook)"],\n'
-            f'  "yt_description": "2-3 sentences with high search volume keywords, #shorts, and subscribe CTA.",\n'
-            f'  "yt_tags": ["#shorts", "#viral", "#trending", ...],\n'
-            f'  "pinned_comment": "Controversial/engaging question to make viewers comment immediately.",\n'
-            f'  "fb_caption": "Short emotional Facebook Reel caption with emojis, question, and 5 hashtags.",\n'
-            f'  "fb_tags": ["#reels", "#viralreels", "#fyp", ...]\n'
+            f'  "yt_titles": [\n'
+            f'    "Option 1: Extreme Curiosity Gap (under 50 chars with emoji)",\n'
+            f'    "Option 2: Shocking Revelation / Warning (under 50 chars with emoji)",\n'
+            f'    "Option 3: Provocative Question Hook (under 50 chars with emoji)"\n'
+            f'  ],\n'
+            f'  "yt_description": "2-3 punchy sentences with natural high-volume search keywords, clear curiosity hook, #Shorts #{niche_tag}, and subscribe CTA.",\n'
+            f'  "yt_tags": ["#shorts", "#viral", "#trending", "#{niche_tag}", "#facts", "#mindblown", "#didyouknow", "#psychology", "#mystery"],\n'
+            f'  "pinned_comment": "A controversial, polarizing, or curiosity-inducing question that forces viewers to reply immediately (boosting algorithmic engagement).",\n'
+            f'  "fb_caption": "Engaging Facebook Reel caption with emojis, curiosity hook, and 5 hashtags.",\n'
+            f'  "fb_tags": ["#reels", "#viralreels", "#{niche_tag}", "#trending", "#fyp"]\n'
             f"}}"
         )
 
-        clean_topic = topic.title()
+        clean_topic = topic.strip().title()
         niche_tag = niche.replace("_", "").lower()
         fallback = {
             "yt_titles": [
-                f"The Secret Truth About {clean_topic} 😱",
-                f"Never Do This With {clean_topic}...",
-                f"Scientists Shocked By {clean_topic} 🤯"
+                f"The Forbidden Truth About {clean_topic[:30]} 🤫",
+                f"Why Nobody Is Allowed To Talk About This ⚠️",
+                f"Did You Notice The Hidden Detail In {clean_topic[:25]}? 🤯"
             ],
             "yt_description": (
-                f"Discover the hidden facts about {clean_topic} that most people ignore. "
-                f"Subscribe for daily mind-blowing facts and psychological breakdowns! #Shorts #{niche_tag} #Viral"
+                f"The hidden facts about {clean_topic} that will completely change how you see this. "
+                f"Subscribe for daily mind-blowing facts, psychology secrets, and historical breakdowns! #Shorts #{niche_tag} #Viral"
             ),
             "yt_tags": [
                 "#shorts", "#viral", "#trending", f"#{niche_tag}",
-                "#facts", "#mindblown", "#didyouknow", "#psychology", "#foryou"
+                "#facts", "#mindblown", "#didyouknow", "#psychology", "#mystery", "#foryou"
             ],
-            "pinned_comment": f"👇 Did you already know about this, or is this your first time hearing it? Let me know below!",
+            "pinned_comment": f"👇 What would you have done in this exact situation? Drop your unfiltered reaction below! 👇",
             "fb_caption": (
-                f"Wait until you see what happens with {clean_topic}... 🤯\n\n"
-                f"Have you ever noticed this before? Drop your thoughts below! 👇\n\n"
+                f"Wait until you see what was hidden in {clean_topic}... 🤯\n\n"
+                f"Have you ever heard of this before? Tell us below! 👇\n\n"
                 f"#reels #viralreels #{niche_tag} #trending #fbreels"
             ),
             "fb_tags": ["#reels", "#viralreels", f"#{niche_tag}", "#trending", "#fyp"]
         }
 
         try:
-            return gemini_pool.generate_json(
+            res = await asyncio.to_thread(
+                gemini_pool.generate_json,
                 prompt=prompt,
                 api_keys=gemini_api_key,
                 fallback=fallback
             )
+            if isinstance(res, dict) and res.get("yt_titles"):
+                return res
+            return fallback
         except Exception as e:
             print(f"[MetaGenerator] Gemini metadata fallback: {e}")
             return fallback
@@ -91,7 +102,7 @@ class MetaGenerator:
 Video File: {video_filename}
 ===================================================================
 
-🔴 YOUTUBE SHORTS (Choose 1 Title):
+🔴 YOUTUBE SHORTS (Choose 1 High-CTR Title):
 1. {titles[0] if len(titles) > 0 else 'Option 1'}
 2. {titles[1] if len(titles) > 1 else 'Option 2'}
 3. {titles[2] if len(titles) > 2 else 'Option 3'}

@@ -32,22 +32,31 @@ class RedditStoryGenerator:
         cls,
         subreddit: str = "r/AskReddit",
         custom_prompt: str = "",
+        duration_sec: int = 50,
         gemini_api_key: Optional[str] = ""
     ) -> Dict[str, Any]:
         """
         Generates a compelling Reddit story with title, author, upvotes, and narration script.
         """
+        min_words = int(duration_sec * 2.5)
+        max_words = int(duration_sec * 3.1)
+        
         prompt = (
-            f"Create a viral Reddit Shorts story for {subreddit}.\n"
-            f"Custom Prompt: {custom_prompt or 'An unbelievable true story with unexpected twist'}\n"
-            f"Target length: 110-140 words (~35 seconds spoken).\n\n"
-            f"Return JSON ONLY with this format:\n"
+            f"You are a master storyteller for viral Reddit narration YouTube Shorts (1M+ views).\n"
+            f"Subreddit: {subreddit}\n"
+            f"Prompt: {custom_prompt or 'An unbelievable true revenge or karma story with shocking payoff'}\n"
+            f"Target length: {min_words}-{max_words} words (~{duration_sec} seconds spoken).\n\n"
+            f"Rules:\n"
+            f"1. Start directly into the action with first-person voice ('When my boss...', 'My landlord thought...').\n"
+            f"2. Build escalating tension and show the satisfying counter-move or karma.\n"
+            f"3. End with a sharp, punchy conclusion.\n\n"
+            f"Return JSON ONLY with this exact format:\n"
             f"{{\n"
             f'  "subreddit": "{subreddit}",\n'
-            f'  "title": "Compelling Reddit Post Title (e.g. My landlord tried to keep my $3,000 deposit, so I took his whole company down...)",\n'
+            f'  "title": "Shocking Reddit Title with specific numbers or stakes",\n'
             f'  "author": "u/throwaway_{uuid.uuid4().hex[:4]}",\n'
-            f'  "upvotes": "28.4k",\n'
-            f'  "script": "The full first-person spoken story text without stage directions."\n'
+            f'  "upvotes": "38.2k",\n'
+            f'  "script": "The full spoken story text without stage directions, sound tags, or markdown."\n'
             f"}}"
         )
 
@@ -83,11 +92,14 @@ class RedditStoryGenerator:
         fallback = random.choice(fallback_stories)
 
         try:
-            return gemini_pool.generate_json(
+            res = gemini_pool.generate_json(
                 prompt=prompt,
                 api_keys=gemini_api_key,
                 fallback=fallback
             )
+            if isinstance(res, dict) and res.get("script"):
+                return res
+            return fallback
         except Exception as e:
             print(f"[RedditGenerator] Gemini Reddit story fallback: {e}")
             return fallback

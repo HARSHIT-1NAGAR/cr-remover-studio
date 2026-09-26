@@ -91,15 +91,14 @@ class AIShortsRenderer:
             if src and src.exists():
                 scene_video_inputs.append(src)
             else:
-                # Generate synthetic motion background for this scene
+                # Generate aesthetic gradient motion background for this scene
                 bg_clip = TEMP_DIR / f"{job_id}_scene_{idx}_bg.mp4"
                 dur = max(2.0, sc.duration_seconds)
-                hue_shift = (idx * 60) % 360
                 cmd_bg = [
                     "ffmpeg", "-y", "-f", "lavfi",
-                    "-i", f"mptestsrc=r=30:d={dur}",
-                    "-vf", f"scale=1080:1920,boxblur=40:10,hue=h={hue_shift}",
-                    "-c:v", "libx264", "-pix_fmt", "yuv420p", "-t", str(dur),
+                    "-i", f"gradients=s=1080x1920:d={dur}:r=30:nb_colors=4:c0=0x070712:c1=0x1e0836:c2=0x0f172a:c3=0x3b0764:type=radial:speed=0.03",
+                    "-vf", "vignette=PI/2.4,noise=c1s=3:c1f=t+u",
+                    "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p", "-t", str(dur),
                     str(bg_clip)
                 ]
                 proc = await asyncio.create_subprocess_exec(*cmd_bg, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE)

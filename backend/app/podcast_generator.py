@@ -29,47 +29,56 @@ class PodcastShortsGenerator:
         cls,
         topic: str,
         style: str = "curiosity_interview",
+        duration_sec: int = 50,
         gemini_api_key: Optional[str] = ""
     ) -> Dict[str, Any]:
         """
-        Generates structured 2-speaker conversation turns.
+        Generates structured 2-speaker conversation turns with high retention banter.
         """
         prompt = (
-            f"Create a high-energy 2-person podcast Shorts script about: {topic}\n"
-            f"Format: Host (interviewer asking provocative questions) & Guest (expert dropping shocking revelations).\n"
-            f"Duration: 30-45 seconds (4 to 6 total dialogue turns, fast pacing).\n\n"
+            f"Create a high-energy, fast-paced 2-person viral podcast Shorts dialogue about: {topic}\n"
+            f"Format: Host (interviewer asking provocative, skeptical questions) & Guest (insider/expert revealing shocking truths).\n"
+            f"Target Duration: ~{duration_sec} seconds (5 to 8 rapid back-and-forth dialogue turns).\n\n"
+            f"Rules:\n"
+            f"1. Turn 1 (Host): Start immediately with a provocative, curiosity-inducing question. No pleasantries.\n"
+            f"2. Turn 2 (Guest): Drop a counter-intuitive fact that shatters common belief.\n"
+            f"3. Turns 3-6: Escalating back-and-forth with disbelief and deeper insider mechanisms.\n"
+            f"4. Final Turn (Guest): Deliver the ultimate mind-blowing takeaway.\n\n"
             f"Return JSON ONLY with this structure:\n"
             f"{{\n"
-            f'  "title": "Shocking Podcast Hook Title",\n'
+            f'  "title": "Shocking Podcast Hook Title with emoji",\n'
             f'  "host_name": "Host",\n'
             f'  "guest_name": "Expert",\n'
             f'  "turns": [\n'
-            f'    {{"speaker": "host", "text": "Is it true that modern banks don\'t actually keep our money in vaults?"}},\n'
-            f'    {{"speaker": "guest", "text": "Almost none of it. Over 90% is immediately loaned out the second you deposit it."}},\n'
-            f'    {{"speaker": "host", "text": "So what happens if everyone tries to withdraw at the same time?"}},\n'
-            f'    {{"speaker": "guest", "text": "The entire system collapses in 48 hours. That\'s the secret nobody talks about."}}\n'
+            f'    {{"speaker": "host", "text": "Is it true that modern banks don\'t actually keep our cash in vaults?"}},\n'
+            f'    {{"speaker": "guest", "text": "Almost none of it. Over ninety percent is immediately loaned out the second you deposit it."}},\n'
+            f'    {{"speaker": "host", "text": "So what happens if everyone tries to withdraw their savings at the same time?"}},\n'
+            f'    {{"speaker": "guest", "text": "The entire financial system collapses in forty-eight hours. That is the secret nobody talks about."}}\n'
             f'  ]\n'
             f"}}"
         )
 
         fallback = {
-            "title": f"The Dark Truth Behind {topic.title()}",
+            "title": f"The Dark Truth Behind {topic.title()} 🎙️",
             "host_name": "Host",
             "guest_name": "Expert",
             "turns": [
-                {"speaker": "host", "text": f"Why is everybody talking about the hidden secret behind {topic}?"},
-                {"speaker": "guest", "text": "Because what they taught us in school was completely backwards. The top one percent have known this for decades."},
-                {"speaker": "host", "text": "Wait, so how does it actually work in real life?"},
-                {"speaker": "guest", "text": "The moment you realize this rule, you will never look at it the same way again."}
+                {"speaker": "host", "text": f"Why is everybody suddenly panicking about the hidden truth behind {topic}?"},
+                {"speaker": "guest", "text": "Because what they taught us in textbooks was completely backwards. The top one percent have used this exact system for decades."},
+                {"speaker": "host", "text": "Wait, so how does it actually affect normal people in real life?"},
+                {"speaker": "guest", "text": "The moment you realize this rule, you will never look at your daily routine the same way again."}
             ]
         }
 
         try:
-            return gemini_pool.generate_json(
+            res = gemini_pool.generate_json(
                 prompt=prompt,
                 api_keys=gemini_api_key,
                 fallback=fallback
             )
+            if isinstance(res, dict) and res.get("turns"):
+                return res
+            return fallback
         except Exception as e:
             print(f"[PodcastGenerator] Gemini podcast dialogue fallback: {e}")
             return fallback

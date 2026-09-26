@@ -157,12 +157,14 @@ class BatchAutoPilotEngine:
         bgm_track: Optional[str] = None,
         subtitle_style: Optional[str] = None,
         broll_category: Optional[str] = None,
+        duration_mode: str = "auto",
+        target_duration: Optional[int] = None,
         custom_topics: Optional[List[str]] = None,
         gemini_api_key: Optional[str] = "",
         progress_callback: Optional[Callable[[str, int, Dict[str, Any]], None]] = None
     ) -> List[Dict[str, Any]]:
         """
-        Executes complete batch generation sequentially with live state updates.
+        Executes complete batch generation sequentially with live state updates and professional creator depth.
         """
         niche = next((n for n in AUTOPILOT_NICHES if n["id"] == niche_id), AUTOPILOT_NICHES[0])
         
@@ -196,16 +198,18 @@ class BatchAutoPilotEngine:
 
             if progress_callback:
                 progress_callback(
-                    f"[{idx+1}/{total_videos}] Generating AI Script & Storyboard for: {topic[:30]}...",
+                    f"[{idx+1}/{total_videos}] Writing Viral Script & Storyboard for: {topic[:30]}...",
                     overall_pct + 2,
                     {"current_index": idx + 1, "total": total_videos, "topic": topic}
                 )
 
-            # 1. Script Generation
+            # 1. High-Retention Script Generation with Custom Story Depth
             if niche_id == "reddit_stories":
+                req_dur = target_duration or (30 if duration_mode == "quick_30s" else 75 if duration_mode == "deep_75s" else 50)
                 story_data = await RedditStoryGenerator.generate_story(
                     subreddit="r/AskReddit",
                     custom_prompt=topic,
+                    duration_sec=req_dur,
                     gemini_api_key=gemini_api_key
                 )
                 title = story_data.get("title", topic)
@@ -213,8 +217,10 @@ class BatchAutoPilotEngine:
             else:
                 script_data = await SceneDirector.generate_script(
                     topic=topic,
+                    niche=niche.get("name", niche_id),
                     tone="dramatic",
-                    target_duration=30,
+                    duration_mode=duration_mode,
+                    target_duration=target_duration,
                     gemini_api_key=gemini_api_key
                 )
                 title = script_data.get("title", topic)

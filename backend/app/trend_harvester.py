@@ -213,25 +213,28 @@ class TrendHarvester:
         cls,
         trend_title: str,
         summary: str = "",
+        duration_sec: int = 50,
         gemini_api_key: Optional[str] = ""
     ) -> Dict[str, Any]:
         """
         Converts a breaking trending headline into a fast-paced viral Shorts script with an infinite loop.
         """
+        min_words = int(duration_sec * 2.6)
+        max_words = int(duration_sec * 3.2)
         prompt = (
-            f"Create an urgent, high-retention viral YouTube Shorts script about this breaking news:\n"
-            f"Headline: {trend_title}\n"
-            f"Summary: {summary}\n\n"
+            f"You are a top-tier viral news and technology YouTube Shorts content director.\n"
+            f"Breaking Headline: {trend_title}\n"
+            f"Context / Summary: {summary}\n"
+            f"Target Duration: ~{duration_sec} seconds ({min_words} to {max_words} spoken words).\n\n"
             f"Requirements:\n"
-            f"- 0-3s: Mind-blowing pattern interrupt hook.\n"
-            f"- 3-25s: Fast, shocking facts explaining what happened.\n"
-            f"- 25-30s: Ending that seamlessly loops back to the very first sentence.\n"
-            f"- Word count: 75-95 words (~30 seconds spoken).\n\n"
+            f"1. HOOK (0-2s): Start IMMEDIATELY with the most shocking consequence, disruption, or breakthrough. No 'Did you know' or 'Breaking news guys'.\n"
+            f"2. STORY & EVIDENCE (2-40s): Explain the real story with specific numbers, company/place names, and why this impacts the future.\n"
+            f"3. INFINITE LOOP (40-50s): Craft the final line so it links grammatically and seamlessly into the opening hook line!\n\n"
             f"Return JSON ONLY:\n"
             f"{{\n"
             f'  "title": "Shocking 50-char viral title with emojis",\n'
             f'  "hook_badge": "BREAKING NEWS",\n'
-            f'  "script": "The spoken voiceover text."\n'
+            f'  "script": "The spoken voiceover text without brackets or stage directions."\n'
             f"}}"
         )
 
@@ -239,19 +242,22 @@ class TrendHarvester:
             "title": f"🚨 Breaking: {trend_title[:40]}!",
             "hook_badge": "BREAKING",
             "script": (
-                f"You will not believe what just happened with {trend_title}. "
-                f"Reports confirm that this completely unexpected breakthrough has stunned experts worldwide. "
-                f"Insiders are saying the implications of this will affect millions of people over the next few months. "
-                f"Subscribe right now so you don't miss the next major update, because..."
+                f"A massive development just unfolded around {trend_title}. "
+                f"Official sources confirm that this sudden breakthrough has caught global industry leaders completely off guard. "
+                f"Independent analysts estimate this could disrupt millions of users within the next few weeks. "
+                f"The reason this caught everyone by surprise is because"
             )
         }
 
         try:
-            return gemini_pool.generate_json(
+            res = gemini_pool.generate_json(
                 prompt=prompt,
                 api_keys=gemini_api_key,
                 fallback=fallback
             )
+            if isinstance(res, dict) and res.get("script"):
+                return res
+            return fallback
         except Exception as e:
             print(f"[TrendHarvester] Gemini trend script fallback: {e}")
             return fallback

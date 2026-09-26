@@ -3,11 +3,12 @@ import {
   Rocket, Calendar, Film, MessageSquare, Image as ImageIcon,
   Sparkles, Play, Pause, Download, Copy, Check, ChevronRight,
   Layers, Volume2, Music, Type, Zap, RefreshCw, AlertCircle, Eye,
-  Clock, Hash, Share2, Award, ArrowUpRight
+  Clock, Hash, Share2, Award, ArrowUpRight, TrendingUp, Mic,
+  Radio, Send, ShieldCheck, Smartphone, Users
 } from 'lucide-react'
 
 export default function AutoPilotStudio({ systemInfo }) {
-  const [activeTab, setActiveTab] = useState('batch_factory') // batch_factory | calendar | broll_vault | reddit_maker | thumbnail_studio
+  const [activeTab, setActiveTab] = useState('batch_factory') // batch_factory | trend_harvester | podcast_maker | calendar | broll_vault | reddit_maker | thumbnail_studio | telegram_bot
   
   // Batch Factory State
   const [niches, setNiches] = useState([])
@@ -29,6 +30,27 @@ export default function AutoPilotStudio({ systemInfo }) {
   const [batchResults, setBatchResults] = useState([])
   const [batchExtra, setBatchExtra] = useState(null)
   
+  // Live Trends State
+  const [liveTrends, setLiveTrends] = useState([])
+  const [isLoadingTrends, setIsLoadingTrends] = useState(false)
+  const [selectedTrend, setSelectedTrend] = useState(null)
+  const [trendScript, setTrendScript] = useState(null)
+  const [isGeneratingTrendScript, setIsGeneratingTrendScript] = useState(false)
+
+  // 2-Person Podcast State
+  const [podcastTopic, setPodcastTopic] = useState('Why 90% of millionaires invest in real estate')
+  const [podcastHostVoice, setPodcastHostVoice] = useState('en-US-ChristopherNeural')
+  const [podcastGuestVoice, setPodcastGuestVoice] = useState('en-US-JennyNeural')
+  const [podcastDialogue, setPodcastDialogue] = useState(null)
+  const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false)
+  const [podcastAudioRes, setPodcastAudioRes] = useState(null)
+
+  // Telegram Bot State
+  const [telegramToken, setTelegramToken] = useState('')
+  const [telegramChatId, setTelegramChatId] = useState('')
+  const [telegramStatus, setTelegramStatus] = useState('idle')
+  const [isSendingTgTest, setIsSendingTgTest] = useState(false)
+
   // Stock Vault State
   const [brollCategories, setBrollCategories] = useState([])
   const [brollSearchQuery, setBrollSearchQuery] = useState('')
@@ -77,7 +99,29 @@ export default function AutoPilotStudio({ systemInfo }) {
         if (Array.isArray(data)) setBrollCategories(data)
       })
       .catch(console.error)
+
+    // Load Live Trends
+    fetchTrends()
+
+    // Load Saved Telegram Config
+    const savedToken = localStorage.getItem('cr_tg_token')
+    const savedChat = localStorage.getItem('cr_tg_chat')
+    if (savedToken) setTelegramToken(savedToken)
+    if (savedChat) setTelegramChatId(savedChat)
   }, [])
+
+  const fetchTrends = async () => {
+    setIsLoadingTrends(true)
+    try {
+      const res = await fetch('/api/trends/live')
+      const data = await res.json()
+      if (Array.isArray(data)) setLiveTrends(data)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsLoadingTrends(false)
+    }
+  }
 
   // Poll Batch Status
   useEffect(() => {
@@ -142,6 +186,87 @@ export default function AutoPilotStudio({ systemInfo }) {
     } catch (err) {
       setIsRenderingBatch(false)
       alert(`Failed to launch batch: ${err.message}`)
+    }
+  }
+
+  // Generate Script from Live Trend
+  const handleTrendToScript = async (trend) => {
+    setSelectedTrend(trend)
+    setIsGeneratingTrendScript(true)
+    try {
+      const res = await fetch('/api/trends/to-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          trend_title: trend.title,
+          summary: trend.summary || '',
+          gemini_api_key: geminiApiKey
+        })
+      })
+      const data = await res.json()
+      setTrendScript(data)
+    } catch (e) {
+      alert(`Trend scripting error: ${e.message}`)
+    } finally {
+      setIsGeneratingTrendScript(false)
+    }
+  }
+
+  // Generate 2-Person Podcast Dialogue
+  const handleGeneratePodcast = async () => {
+    setIsGeneratingPodcast(true)
+    try {
+      const res = await fetch('/api/podcast/synthesize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: podcastTopic,
+          host_voice: podcastHostVoice,
+          guest_voice: podcastGuestVoice,
+          gemini_api_key: geminiApiKey
+        })
+      })
+      const data = await res.json()
+      setPodcastDialogue(data.dialogue)
+      setPodcastAudioRes(data.audio)
+    } catch (e) {
+      alert(`Podcast error: ${e.message}`)
+    } finally {
+      setIsGeneratingPodcast(false)
+    }
+  }
+
+  // Telegram Bot Control
+  const handleTelegramAction = async (action) => {
+    if (!telegramToken || !telegramChatId) {
+      alert('Please enter your Telegram Bot Token and Chat ID!')
+      return
+    }
+    localStorage.setItem('cr_tg_token', telegramToken)
+    localStorage.setItem('cr_tg_chat', telegramChatId)
+
+    if (action === 'test_message') setIsSendingTgTest(true)
+    try {
+      const res = await fetch('/api/telegram/control', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bot_token: telegramToken,
+          chat_id: telegramChatId,
+          action: action
+        })
+      })
+      const data = await res.json()
+      if (action === 'start') {
+        setTelegramStatus('online')
+        alert('✅ Telegram Remote Control Bot is now active! Send commands like /batch 3 or /trend on your phone.')
+      } else if (action === 'test_message') {
+        alert('📬 Test message sent to your Telegram phone!')
+      }
+    } catch (e) {
+      alert(`Telegram error: ${e.message}`)
+    } finally {
+      setIsSendingTgTest(false)
     }
   }
 
@@ -222,36 +347,39 @@ export default function AutoPilotStudio({ systemInfo }) {
   const currentNicheObj = niches.find(n => n.id === selectedNiche) || niches[0]
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', width: '100%', maxWidth: '1400px', margin: '0 auto' }}>
       
       {/* Top Banner / Navigation Sub-Tabs */}
       <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 'var(--space-3)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
           <div style={{
-            width: '40px', height: '40px', borderRadius: 'var(--radius-md)',
+            width: '42px', height: '42px', borderRadius: 'var(--radius-md)',
             background: 'linear-gradient(135deg, var(--accent), #ec4899)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff'
           }}>
-            <Rocket size={20} />
+            <Rocket size={22} />
           </div>
           <div>
             <h2 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-              Creator Auto-Pilot Factory <span style={{ fontSize: 'var(--text-xs)', background: 'var(--accent-glow)', color: 'var(--accent)', padding: '2px 8px', borderRadius: 'var(--radius-sm)' }}>YouTube & FB Reels</span>
+              Creator Auto-Pilot Suite <span style={{ fontSize: 'var(--text-xs)', background: 'var(--accent-glow)', color: 'var(--accent)', padding: '2px 8px', borderRadius: 'var(--radius-sm)' }}>YouTube & FB Reels</span>
             </h2>
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', margin: 0 }}>
-              Zero-touch batch automation: Scripting, Voiceover, B-Roll, Subtitles, Thumbnails, SEO & Calendar
+              Zero-Touch Production: Auto-Trends, Auto-SFX Staging, 2-Person Podcast Shorts & Phone Control
             </p>
           </div>
         </div>
 
         {/* Sub-Tab Switcher */}
-        <div style={{ display: 'flex', background: 'var(--bg-secondary)', padding: '4px', borderRadius: 'var(--radius-md)', gap: '4px' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', background: 'var(--bg-secondary)', padding: '4px', borderRadius: 'var(--radius-md)', gap: '4px' }}>
           {[
-            { id: 'batch_factory', label: '1-Click Batch Factory', icon: Rocket },
-            { id: 'calendar', label: 'Content Calendar', icon: Calendar, badge: batchResults.length > 0 ? batchResults.length : null },
-            { id: 'broll_vault', label: 'B-Roll & Gameplay Vault', icon: Film },
-            { id: 'reddit_maker', label: 'Reddit Story Generator', icon: MessageSquare },
-            { id: 'thumbnail_studio', label: '9:16 Cover Studio', icon: ImageIcon }
+            { id: 'batch_factory', label: 'Batch Factory', icon: Rocket },
+            { id: 'trend_harvester', label: 'Live Trends', icon: TrendingUp },
+            { id: 'podcast_maker', label: '2-Person Podcast', icon: Users },
+            { id: 'calendar', label: 'Calendar', icon: Calendar, badge: batchResults.length > 0 ? batchResults.length : null },
+            { id: 'broll_vault', label: 'Stock Vault', icon: Film },
+            { id: 'reddit_maker', label: 'Reddit Drama', icon: MessageSquare },
+            { id: 'thumbnail_studio', label: '9:16 Covers', icon: ImageIcon },
+            { id: 'telegram_bot', label: 'Phone Bot', icon: Smartphone }
           ].map(tab => {
             const Icon = tab.icon
             const active = activeTab === tab.id
@@ -261,7 +389,7 @@ export default function AutoPilotStudio({ systemInfo }) {
                 onClick={() => setActiveTab(tab.id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '6px',
-                  padding: '8px 14px', borderRadius: 'var(--radius-sm)',
+                  padding: '7px 12px', borderRadius: 'var(--radius-sm)',
                   fontSize: 'var(--text-xs)', fontWeight: 600,
                   border: 'none', cursor: 'pointer',
                   background: active ? 'var(--accent)' : 'transparent',
@@ -269,7 +397,7 @@ export default function AutoPilotStudio({ systemInfo }) {
                   transition: 'all var(--transition)'
                 }}
               >
-                <Icon size={14} />
+                <Icon size={13} />
                 <span>{tab.label}</span>
                 {tab.badge && (
                   <span style={{ background: '#22c55e', color: '#000', fontSize: '10px', padding: '1px 5px', borderRadius: '10px', fontWeight: 700 }}>
@@ -442,8 +570,16 @@ export default function AutoPilotStudio({ systemInfo }) {
                 </div>
               </div>
 
+              {/* Auto-SFX Indicator */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(34, 197, 94, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+                <Volume2 size={14} color="#22c55e" />
+                <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: 600 }}>
+                  Intelligent Auto-SFX Active: Sub-bass hook drop + transition whooshes + power word dings automatically staged.
+                </span>
+              </div>
+
               {/* Optional Custom Topics Input */}
-              <div style={{ marginTop: 'var(--space-2)' }}>
+              <div>
                 <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
                   Custom Topics (Optional — 1 topic per line, or leave empty for AI selection)
                 </label>
@@ -637,7 +773,305 @@ export default function AutoPilotStudio({ systemInfo }) {
       )}
 
       {/* ========================================================================= */}
-      {/* 2. CONTENT CALENDAR TAB */}
+      {/* 2. LIVE TRENDS & BREAKING NEWS HARVESTER */}
+      {/* ========================================================================= */}
+      {activeTab === 'trend_harvester' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(360px, 1.3fr)', gap: 'var(--space-4)' }}>
+          
+          {/* Left: Live Google Trends Feed */}
+          <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <TrendingUp size={16} color="var(--accent)" />
+                  Real-time Google Trends & Viral News
+                </h3>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Updated live from global RSS search feeds</span>
+              </div>
+              <button
+                onClick={fetchTrends}
+                disabled={isLoadingTrends}
+                style={{ padding: '6px 10px', fontSize: '11px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: '#fff', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+              >
+                <RefreshCw size={12} className={isLoadingTrends ? 'spin' : ''} />
+                <span>Refresh</span>
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', maxHeight: '500px', overflowY: 'auto' }}>
+              {liveTrends.map((t, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => handleTrendToScript(t)}
+                  style={{
+                    padding: '10px', borderRadius: 'var(--radius-sm)',
+                    background: selectedTrend?.title === t.title ? 'var(--bg-secondary)' : 'rgba(255,255,255,0.02)',
+                    border: `1px solid ${selectedTrend?.title === t.title ? 'var(--accent)' : 'var(--border)'}`,
+                    cursor: 'pointer', transition: 'all var(--transition)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+                    <span style={{ fontSize: '10px', background: 'var(--accent-glow)', color: 'var(--accent)', padding: '1px 6px', borderRadius: '3px', fontWeight: 700 }}>
+                      🔥 {t.traffic}
+                    </span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{t.source}</span>
+                  </div>
+                  <h4 style={{ fontSize: 'var(--text-xs)', fontWeight: 700, margin: '4px 0 2px 0', color: 'var(--text-primary)' }}>
+                    {t.title}
+                  </h4>
+                  <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.3 }}>
+                    {t.summary}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Auto-Generated Trend Script & 1-Click Render */}
+          <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>
+              Live Viral Script & Infinite Loop Stager
+            </h3>
+
+            {isGeneratingTrendScript ? (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '8px' }}>
+                <RefreshCw size={18} className="spin" color="var(--accent)" />
+                <span>Crafting high-retention news script with infinite loop ending...</span>
+              </div>
+            ) : trendScript ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '10px', background: '#ef4444', color: '#fff', padding: '2px 8px', borderRadius: '4px', fontWeight: 800 }}>
+                    {trendScript.hook_badge || 'BREAKING'}
+                  </span>
+                  <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
+                    {trendScript.title}
+                  </h4>
+                </div>
+
+                <div style={{ padding: 'var(--space-3)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--accent)', display: 'block', marginBottom: '4px' }}>
+                    🎙️ Narration Script (Infinite Loop Ending):
+                  </span>
+                  <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-primary)', lineHeight: 1.5, margin: 0 }}>
+                    "{trendScript.script}"
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setCustomTopics(selectedTrend?.title || '')
+                    setActiveTab('batch_factory')
+                  }}
+                  className="btn-primary"
+                  style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: 'var(--text-xs)', fontWeight: 700 }}
+                >
+                  <Rocket size={14} />
+                  <span>Send to 1-Click Auto-Pilot Factory & Render</span>
+                </button>
+              </div>
+            ) : (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
+                Select any breaking trend on the left to auto-generate a viral script.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3. 2-PERSON PODCAST & DIALOGUE SHORTS */}
+      {/* ========================================================================= */}
+      {activeTab === 'podcast_maker' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(360px, 1.4fr)', gap: 'var(--space-4)' }}>
+          
+          <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <Users size={16} color="var(--accent)" />
+              2-Person Conversational Podcast Shorts
+            </h3>
+
+            <div>
+              <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Conversation Topic / Provocative Question
+              </label>
+              <textarea
+                rows={3}
+                value={podcastTopic}
+                onChange={e => setPodcastTopic(e.target.value)}
+                style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+              <div>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  🎙️ Host / Interviewer Voice
+                </label>
+                <select
+                  value={podcastHostVoice}
+                  onChange={e => setPodcastHostVoice(e.target.value)}
+                  style={{ width: '100%', padding: '7px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: '#fff', border: '1px solid var(--border)', fontSize: '11px' }}
+                >
+                  {voices.map(v => <option key={v.id} value={v.id}>{v.name} ({v.gender})</option>)}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  💡 Guest / Expert Voice
+                </label>
+                <select
+                  value={podcastGuestVoice}
+                  onChange={e => setPodcastGuestVoice(e.target.value)}
+                  style={{ width: '100%', padding: '7px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: '#fff', border: '1px solid var(--border)', fontSize: '11px' }}
+                >
+                  {voices.map(v => <option key={v.id} value={v.id}>{v.name} ({v.gender})</option>)}
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleGeneratePodcast}
+              disabled={isGeneratingPodcast}
+              className="btn-primary"
+              style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: 'var(--text-xs)', fontWeight: 700 }}
+            >
+              {isGeneratingPodcast ? <RefreshCw size={14} className="spin" /> : <Mic size={14} />}
+              <span>{isGeneratingPodcast ? 'Synthesizing Dual-Voice Podcast...' : 'Generate 2-Speaker Dialogue & Audio'}</span>
+            </button>
+          </div>
+
+          <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>
+              Alternating Speaker Dialogue & Audio Preview
+            </h3>
+
+            {podcastDialogue ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                {podcastAudioRes?.master_audio_url && (
+                  <div style={{ padding: 'var(--space-2)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
+                    <audio src={podcastAudioRes.master_audio_url} controls style={{ width: '100%' }} />
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflowY: 'auto' }}>
+                  {podcastDialogue.turns?.map((turn, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '10px 12px', borderRadius: 'var(--radius-sm)',
+                        background: turn.speaker === 'host' ? 'rgba(91, 108, 249, 0.08)' : 'rgba(236, 72, 153, 0.08)',
+                        borderLeft: `3px solid ${turn.speaker === 'host' ? 'var(--accent)' : '#ec4899'}`
+                      }}
+                    >
+                      <span style={{ fontSize: '10px', fontWeight: 800, color: turn.speaker === 'host' ? 'var(--accent)' : '#ec4899', textTransform: 'uppercase' }}>
+                        {turn.speaker === 'host' ? `🎙️ ${podcastDialogue.host_name || 'Host'}` : `💡 ${podcastDialogue.guest_name || 'Guest'}`}
+                      </span>
+                      <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-primary)', margin: '2px 0 0 0', lineHeight: 1.4 }}>
+                        {turn.text}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
+                Click "Generate 2-Speaker Dialogue" to create a dynamic podcast Short.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 4. TELEGRAM REMOTE CONTROL BOT */}
+      {/* ========================================================================= */}
+      {activeTab === 'telegram_bot' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(360px, 1.2fr)', gap: 'var(--space-4)' }}>
+          
+          <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+              <Smartphone size={18} color="var(--accent)" />
+              <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>
+                Telegram Remote Control Setup
+              </h3>
+            </div>
+            <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: 0 }}>
+              Control your channel factory directly from your phone. Create a bot in 30 seconds via Telegram's <strong>@BotFather</strong>.
+            </p>
+
+            <div>
+              <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Telegram Bot Token
+              </label>
+              <input
+                type="password"
+                value={telegramToken}
+                onChange={e => setTelegramToken(e.target.value)}
+                placeholder="e.g. 7123456789:AAH..."
+                style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                Your Telegram Chat ID (or User ID)
+              </label>
+              <input
+                type="text"
+                value={telegramChatId}
+                onChange={e => setTelegramChatId(e.target.value)}
+                placeholder="e.g. 123456789"
+                style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
+              />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)', marginTop: '4px' }}>
+              <button
+                onClick={() => handleTelegramAction('start')}
+                className="btn-primary"
+                style={{ padding: '10px', fontSize: 'var(--text-xs)', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <Zap size={14} />
+                <span>Start Phone Bot</span>
+              </button>
+
+              <button
+                onClick={() => handleTelegramAction('test_message')}
+                disabled={isSendingTgTest}
+                style={{ padding: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: '#fff', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <Send size={14} />
+                <span>{isSendingTgTest ? 'Sending...' : 'Send Test Msg'}</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+            <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>
+              Phone Commands Cheat Sheet
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+              {[
+                { cmd: '/batch 5 dark_psychology', desc: 'Renders 5 Shorts and sends MP4 files + copyable titles to your phone.' },
+                { cmd: '/trend', desc: 'Fetches today\'s #1 Google trend, generates script, and sends ready Short.' },
+                { cmd: '/reddit', desc: 'Creates a viral Reddit drama story with Subway Surfers gameplay.' },
+                { cmd: '/status', desc: 'Checks server CPU, GPU NVENC status, and disk space.' }
+              ].map((c, i) => (
+                <div key={i} style={{ padding: '10px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+                  <code style={{ color: 'var(--accent)', fontWeight: 700, fontSize: '12px' }}>{c.cmd}</code>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '11px', color: 'var(--text-secondary)' }}>{c.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5. CONTENT CALENDAR TAB */}
       {/* ========================================================================= */}
       {activeTab === 'calendar' && (
         <div className="card" style={{ padding: 'var(--space-4)' }}>
@@ -708,12 +1142,10 @@ export default function AutoPilotStudio({ systemInfo }) {
       )}
 
       {/* ========================================================================= */}
-      {/* 3. STOCK B-ROLL & GAMEPLAY VAULT */}
+      {/* 6. STOCK B-ROLL & GAMEPLAY VAULT */}
       {/* ========================================================================= */}
       {activeTab === 'broll_vault' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-          
-          {/* Header & Search Bar */}
           <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 'var(--space-3)' }}>
             <div>
               <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -744,7 +1176,6 @@ export default function AutoPilotStudio({ systemInfo }) {
             </div>
           </div>
 
-          {/* Curated Background Categories Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 'var(--space-3)' }}>
             {brollCategories.map(cat => (
               <div
@@ -788,12 +1219,10 @@ export default function AutoPilotStudio({ systemInfo }) {
       )}
 
       {/* ========================================================================= */}
-      {/* 4. REDDIT STORY GENERATOR */}
+      {/* 7. REDDIT STORY GENERATOR */}
       {/* ========================================================================= */}
       {activeTab === 'reddit_maker' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(360px, 1.4fr)', gap: 'var(--space-4)' }}>
-          
-          {/* Left: Configuration */}
           <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
               <MessageSquare size={16} color="var(--accent)" />
@@ -841,7 +1270,6 @@ export default function AutoPilotStudio({ systemInfo }) {
             </button>
           </div>
 
-          {/* Right: Live Preview of Reddit Card & Script */}
           <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>
               Live Reddit UI Card & Narration Script
@@ -849,15 +1277,12 @@ export default function AutoPilotStudio({ systemInfo }) {
 
             {redditStory ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                
-                {/* Rendered Reddit UI Card Image */}
                 {redditStory.card_url && (
                   <div style={{ width: '100%', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border)' }}>
                     <img src={redditStory.card_url} alt="Reddit Post Card" style={{ width: '100%', height: 'auto', display: 'block' }} />
                   </div>
                 )}
 
-                {/* Narration Script */}
                 <div style={{ padding: 'var(--space-3)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
                   <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', display: 'block', marginBottom: '4px' }}>
                     🎙️ Narration Script ({redditStory.author})
@@ -877,11 +1302,10 @@ export default function AutoPilotStudio({ systemInfo }) {
       )}
 
       {/* ========================================================================= */}
-      {/* 5. 9:16 COVER & THUMBNAIL STUDIO */}
+      {/* 8. 9:16 COVER & THUMBNAIL STUDIO */}
       {/* ========================================================================= */}
       {activeTab === 'thumbnail_studio' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(320px, 1fr) minmax(320px, 1fr)', gap: 'var(--space-4)' }}>
-          
           <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
               <ImageIcon size={16} color="var(--accent)" />

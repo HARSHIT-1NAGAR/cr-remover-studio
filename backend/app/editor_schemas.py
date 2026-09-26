@@ -136,3 +136,24 @@ class StockSearchRequest(BaseModel):
     count: int = Field(default=6, ge=1, le=20)
     pexels_api_key: Optional[str] = ""
 
+
+class PodcastDialogueRequest(BaseModel):
+    topic: str = Field(...)
+    style: str = Field(default="curiosity_interview")
+    host_voice: str = Field(default="en-US-ChristopherNeural")
+    guest_voice: str = Field(default="en-US-JennyNeural")
+    gemini_api_key: Optional[str] = ""
+
+
+class TrendToScriptRequest(BaseModel):
+    trend_title: str = Field(...)
+    summary: str = Field(default="")
+    gemini_api_key: Optional[str] = ""
+
+
+class TelegramBotRequest(BaseModel):
+    bot_token: str = Field(...)
+    chat_id: str = Field(...)
+    action: Literal["start", "stop", "status", "test_message"] = "status"
+
+

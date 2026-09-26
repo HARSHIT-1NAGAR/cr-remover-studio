@@ -29,7 +29,8 @@ from app.pipeline import VideoPipeline, VideoProbe
 from app.auto_viral import AutoViralEngine
 from app.editor_schemas import (
     GenerateTTSRequest, ParseScriptRequest, GenerateScriptFromTopicRequest, AIShortsRenderRequest,
-    BatchAutoPilotRequest, GenerateThumbnailRequest, GenerateMetadataRequest, RedditStoryRequest, StockSearchRequest
+    BatchAutoPilotRequest, GenerateThumbnailRequest, GenerateMetadataRequest, RedditStoryRequest, StockSearchRequest,
+    PodcastDialogueRequest, TrendToScriptRequest, TelegramBotRequest
 )
 from app.tts_engine import TTSEngine
 from app.scene_director import SceneDirector
@@ -38,8 +39,13 @@ from app.broll_harvester import BRollHarvester
 from app.thumbnail_generator import ThumbnailGenerator
 from app.meta_generator import MetaGenerator
 from app.reddit_generator import RedditStoryGenerator
+from app.trend_harvester import TrendHarvester
+from app.podcast_generator import PodcastShortsGenerator
+from app.telegram_bot import TelegramStudioBot
+from app.motion_tracker import SmartMotionTracker
 from app.batch_autopilot import BatchAutoPilotEngine, BATCH_JOBS
 from app.audio_assets import ASSETS_DIR, BGM_DIR, SFX_DIR, init_default_audio_assets
+
 
 # Initialize audio assets on startup
 init_default_audio_assets()
@@ -821,7 +827,70 @@ async def generate_reddit_story(payload: RedditStoryRequest):
     return story
 
 
+@app.get("/api/trends/live")
+async def get_live_trends():
+    """Fetches real-time viral trends from Google Trends and news feeds."""
+    return await TrendHarvester.fetch_live_trends()
+
+
+@app.post("/api/trends/to-script")
+async def convert_trend_to_script(payload: TrendToScriptRequest):
+    """Converts a live breaking news topic into a high-retention Shorts script."""
+    return await TrendHarvester.trend_to_script(
+        trend_title=payload.trend_title,
+        summary=payload.summary,
+        gemini_api_key=payload.gemini_api_key
+    )
+
+
+@app.post("/api/podcast/generate-dialogue")
+async def generate_podcast_dialogue(payload: PodcastDialogueRequest):
+    """Generates 2-person debate/interview dialogue turns."""
+    return await PodcastShortsGenerator.generate_dialogue(
+        topic=payload.topic,
+        style=payload.style,
+        gemini_api_key=payload.gemini_api_key
+    )
+
+
+@app.post("/api/podcast/synthesize")
+async def synthesize_podcast_audio(payload: PodcastDialogueRequest):
+    """Synthesizes alternating 2-voice audio with global word timestamps."""
+    dialogue = await PodcastShortsGenerator.generate_dialogue(
+        topic=payload.topic,
+        style=payload.style,
+        gemini_api_key=payload.gemini_api_key
+    )
+    audio_res = await PodcastShortsGenerator.synthesize_dual_audio(
+        dialogue=dialogue,
+        host_voice=payload.host_voice,
+        guest_voice=payload.guest_voice
+    )
+    return {"dialogue": dialogue, "audio": audio_res}
+
+
+@app.post("/api/telegram/control")
+async def control_telegram_bot(
+    payload: TelegramBotRequest,
+    background_tasks: BackgroundTasks
+):
+    """Starts, stops, or sends test message through Telegram Remote Control Bot."""
+    if payload.action == "test_message":
+        await TelegramStudioBot.send_message(
+            payload.bot_token, payload.chat_id,
+            "🚀 *CR Remover Studio Test Message*\nYour Telegram remote control bot is connected and operational!"
+        )
+        return {"status": "test_sent"}
+    elif payload.action == "start":
+        if not TelegramStudioBot.is_running():
+            background_tasks.add_task(TelegramStudioBot.poll_updates, payload.bot_token, payload.chat_id)
+        return {"status": "bot_started"}
+    else:
+        return {"status": "online" if TelegramStudioBot.is_running() else "idle"}
+
+
 # Mount built React frontend if dist exists
 if FRONTEND_DIST_DIR.exists():
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIST_DIR), html=True), name="frontend")
+
 

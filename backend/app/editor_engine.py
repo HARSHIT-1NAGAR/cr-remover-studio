@@ -16,6 +16,8 @@ from app.config import HAS_NVENC, TEMP_DIR, PROCESSED_DIR, STORAGE_DIR
 from app.audio_assets import SFX_DIR, BGM_DIR
 from app.editor_schemas import AIShortsRenderRequest, SceneBlock
 from app.tts_engine import TTSEngine
+from app.sfx_director import SFXDirector
+
 
 
 class AIShortsRenderer:
@@ -192,22 +194,36 @@ class AIShortsRenderer:
         else:
             filter_complex.append(f"[{current_v}]null[v_final]")
 
-        # 4. Build Audio Filter Graph (Voice + BGM Sidechain Ducking)
+        # 4. Build Audio Filter Graph (Voice + BGM Sidechain Ducking + Auto-SFX)
+        sfx_start_idx = bgm_input_idx + (1 if has_bgm else 0)
+        sfx_events = SFXDirector.compile_sfx_timeline(request.word_timings, request.scenes, total_duration)
+        sfx_inputs, sfx_label, sfx_filter_lines = SFXDirector.build_sfx_filtergraph(
+            sfx_events, start_input_idx=sfx_start_idx, total_duration=total_duration
+        )
+        input_args.extend(sfx_inputs)
+        filter_complex.extend(sfx_filter_lines)
+
         if has_bgm:
             bgm_vol = request.bgm_volume
-            # Loop BGM to cover total video duration and mix with voice
-            # Split voice into two streams: one for sidechain trigger, one for main audio mix
-            audio_filter = (
+            filter_complex.append(
                 f"[{bgm_input_idx}:a]aloop=loop=-1:size=2e+09,atrim=0:{total_duration},volume={bgm_vol}[a_bgm_raw];"
                 f"[{voice_input_idx}:a]volume=1.0,asplit[a_voice_main][a_voice_sc];"
                 f"[a_bgm_raw][a_voice_sc]sidechaincompress=threshold=0.1:ratio=8:attack=10:release=300[a_bgm_ducked];"
-                f"[a_voice_main][a_bgm_ducked]amix=inputs=2:duration=first:dropout_transition=2[a_final]"
+                f"[a_voice_main][a_bgm_ducked]amix=inputs=2:duration=first:dropout_transition=2[a_voice_bgm]"
             )
+            base_audio = "a_voice_bgm"
         else:
-            audio_filter = f"[{voice_input_idx}:a]volume=1.0[a_final]"
+            base_audio = f"a_voice_solo"
+            filter_complex.append(f"[{voice_input_idx}:a]volume=1.0[{base_audio}]")
 
-        filter_complex.append(audio_filter)
+        # Mix voice+BGM with sound effects if any triggers exist
+        if sfx_label:
+            filter_complex.append(f"[{base_audio}]{sfx_label}amix=inputs=2:duration=first:dropout_transition=0[a_final]")
+        else:
+            filter_complex.append(f"[{base_audio}]anull[a_final]")
+
         complex_filter_str = ";".join(filter_complex)
+
 
         # 5. Determine Encoder Parameters
         if use_gpu:

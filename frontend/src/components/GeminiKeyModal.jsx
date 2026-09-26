@@ -138,25 +138,25 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
       padding: '20px'
     }}>
       <div style={{
-        background: 'var(--bg-surface, #111318)',
-        border: '1px solid var(--border-subtle, rgba(255, 255, 255, 0.12))',
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border)',
         borderRadius: '16px',
         width: '100%',
         maxWidth: '680px',
         maxHeight: '90vh',
         display: 'flex',
         flexDirection: 'column',
-        boxShadow: '0 24px 64px rgba(0, 0, 0, 0.8), 0 0 32px rgba(99, 102, 241, 0.15)',
+        boxShadow: 'var(--shadow-xl)',
         overflow: 'hidden'
       }}>
         {/* Header */}
         <div style={{
           padding: '20px 24px',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+          borderBottom: '1px solid var(--border)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: 'linear-gradient(180deg, rgba(99, 102, 241, 0.08) 0%, transparent 100%)'
+          background: 'linear-gradient(180deg, var(--accent-muted) 0%, transparent 100%)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{
@@ -172,21 +172,21 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
               <Key size={20} color="#fff" />
             </div>
             <div>
-              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                 Google Gemini Multi-Key Pool
                 <span style={{
                   fontSize: '0.72rem',
                   padding: '2px 8px',
                   borderRadius: '20px',
-                  background: activeCount > 0 ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                  color: activeCount > 0 ? '#10b981' : '#f59e0b',
+                  background: activeCount > 0 ? 'var(--green-muted)' : 'var(--amber-muted)',
+                  color: activeCount > 0 ? 'var(--green)' : 'var(--amber)',
                   border: activeCount > 0 ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(245, 158, 11, 0.3)',
                   fontWeight: 600
                 }}>
                   {activeCount} Active Key{activeCount !== 1 ? 's' : ''}
                 </span>
               </div>
-              <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 Auto-rotates & fails over instantly when rate limits (429 / Quota) are reached
               </div>
             </div>
@@ -194,11 +194,11 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
           <button
             onClick={onClose}
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border)',
               borderRadius: '8px',
               padding: '6px',
-              color: '#94a3b8',
+              color: 'var(--text-secondary)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
@@ -214,8 +214,8 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
           
           {/* Tip Banner */}
           <div style={{
-            background: 'rgba(99, 102, 241, 0.08)',
-            border: '1px solid rgba(99, 102, 241, 0.25)',
+            background: 'var(--accent-muted)',
+            border: '1px solid var(--accent-border)',
             borderRadius: '12px',
             padding: '12px 16px',
             display: 'flex',
@@ -224,8 +224,8 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
             gap: '12px'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <Sparkles size={18} color="#818cf8" />
-              <span style={{ fontSize: '0.83rem', color: '#cbd5e1' }}>
+              <Sparkles size={18} color="var(--accent)" />
+              <span style={{ fontSize: '0.83rem', color: 'var(--text-primary)' }}>
                 Create multiple free API keys in Google AI Studio to multiply your daily generation capacity!
               </span>
             </div>
@@ -238,9 +238,10 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
                 alignItems: 'center',
                 gap: '5px',
                 fontSize: '0.78rem',
-                color: '#818cf8',
+                color: 'var(--accent)',
                 textDecoration: 'none',
-                background: 'rgba(99, 102, 241, 0.15)',
+                background: 'var(--accent-muted)',
+                border: '1px solid var(--accent-border)',
                 padding: '5px 10px',
                 borderRadius: '6px',
                 fontWeight: 600,
@@ -253,7 +254,7 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
 
           {/* Key Input Field */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: '#e2e8f0', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>
               Paste Gemini API Keys (1 or multiple, comma or newline separated):
             </label>
             <textarea
@@ -265,9 +266,9 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
                 width: '100%',
                 padding: '12px 14px',
                 borderRadius: '10px',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                background: 'var(--bg-input, #0c0e14)',
-                color: '#f8fafc',
+                border: '1px solid var(--border)',
+                background: 'var(--bg-input)',
+                color: 'var(--text-primary)',
                 fontSize: '0.86rem',
                 fontFamily: 'monospace',
                 outline: 'none',
@@ -275,7 +276,7 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
               }}
             />
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }}>
-              <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                 Accepts multiple keys separated by commas or lines. Keys are securely stored locally.
               </span>
               <button
@@ -305,17 +306,17 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
           {/* Active Keys Section */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#e2e8f0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ShieldCheck size={16} color="#10b981" />
+              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <ShieldCheck size={16} color="var(--green)" />
                 <span>Configured Pool Keys ({keysList.length})</span>
               </div>
               <button
                 onClick={handleTestAllKeys}
                 disabled={isTesting || keysList.length === 0}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.06)',
-                  border: '1px solid rgba(255, 255, 255, 0.12)',
-                  color: '#94a3b8',
+                  background: 'var(--bg-card)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)',
                   padding: '5px 12px',
                   borderRadius: '6px',
                   fontSize: '0.78rem',
@@ -327,7 +328,7 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
                 }}
               >
                 <RefreshCw size={12} className={isTesting ? 'spin-anim' : ''} />
-                {isTesting ? 'Testing All Keys...' : '⚡ Live Test All Keys'}
+                <span>{isTesting ? 'Testing All Keys...' : '⚡ Live Test All Keys'}</span>
               </button>
             </div>
 
@@ -335,10 +336,10 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
               <div style={{
                 textAlign: 'center',
                 padding: '28px 16px',
-                background: 'rgba(255, 255, 255, 0.02)',
+                background: 'var(--bg-elevated)',
                 borderRadius: '10px',
-                border: '1px dashed rgba(255, 255, 255, 0.1)',
-                color: '#64748b',
+                border: '1px dashed var(--border)',
+                color: 'var(--text-muted)',
                 fontSize: '0.85rem'
               }}>
                 No API keys in pool yet. Paste one or more keys above to enable AI features with failover.
@@ -359,8 +360,8 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         padding: '10px 14px',
-                        background: 'var(--bg-card, #16181f)',
-                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
                         borderRadius: '10px'
                       }}
                     >
@@ -368,14 +369,14 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
                         <span style={{
                           fontSize: '0.75rem',
                           fontFamily: 'monospace',
-                          color: '#64748b',
-                          background: 'rgba(255, 255, 255, 0.05)',
+                          color: 'var(--text-secondary)',
+                          background: 'var(--bg-tertiary)',
                           padding: '2px 6px',
                           borderRadius: '4px'
                         }}>
                           #{idx + 1}
                         </span>
-                        <span style={{ fontFamily: 'monospace', fontSize: '0.86rem', color: '#e2e8f0' }}>
+                        <span style={{ fontFamily: 'monospace', fontSize: '0.86rem', color: 'var(--text-primary)' }}>
                           {kObj.masked}
                         </span>
                         
@@ -477,22 +478,22 @@ export default function GeminiKeyModal({ isOpen, onClose, onKeysUpdated }) {
         {/* Footer */}
         <div style={{
           padding: '16px 24px',
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-          background: 'rgba(0, 0, 0, 0.2)',
+          borderTop: '1px solid var(--border)',
+          background: 'var(--bg-elevated)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
         }}>
-          <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Zap size={14} color="#6366f1" />
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Zap size={14} color="var(--accent)" />
             <span>Multi-Model Support: 2.0 Flash • 1.5 Flash • 2.0 Flash-Lite • 1.5 Pro</span>
           </div>
           <button
             onClick={onClose}
             style={{
-              background: 'rgba(255, 255, 255, 0.08)',
-              color: '#f8fafc',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
+              background: 'var(--bg-card)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border)',
               padding: '8px 20px',
               borderRadius: '8px',
               fontSize: '0.85rem',

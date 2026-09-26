@@ -221,7 +221,7 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
           </div>
 
           {/* Mode Tabs */}
-          <div style={{ display: 'flex', background: 'rgba(255, 255, 255, 0.05)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'flex', background: 'var(--bg-elevated)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border)' }}>
             <button
               onClick={() => { setActiveTab('topic'); setChannelFeed(''); }}
               style={{
@@ -276,7 +276,7 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
                   width: '100%',
                   padding: '14px 16px',
                   borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--border-subtle)',
+                  border: '1px solid var(--border)',
                   background: 'var(--bg-input)',
                   color: 'var(--text-primary)',
                   fontSize: '0.95rem',
@@ -291,12 +291,13 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
                     key={item}
                     onClick={() => { setTopic(item); setChannelFeed(''); }}
                     style={{
-                      background: topic === item ? 'rgba(139, 92, 246, 0.25)' : 'rgba(255, 255, 255, 0.05)',
-                      border: topic === item ? '1px solid var(--accent-purple)' : '1px solid var(--border-subtle)',
-                      color: topic === item ? '#fff' : 'var(--text-secondary)',
+                      background: topic === item ? 'var(--accent-muted)' : 'var(--bg-elevated)',
+                      border: topic === item ? '1px solid var(--accent)' : '1px solid var(--border)',
+                      color: topic === item ? 'var(--accent)' : 'var(--text-secondary)',
                       padding: '4px 10px',
                       borderRadius: '6px',
                       fontSize: '0.75rem',
+                      fontWeight: 600,
                       cursor: 'pointer'
                     }}
                   >
@@ -319,13 +320,13 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
                     style={{
                       padding: '12px 14px',
                       borderRadius: 'var(--radius-md)',
-                      background: channelFeed === niche.id ? 'rgba(236, 72, 153, 0.15)' : 'var(--bg-input)',
-                      border: channelFeed === niche.id ? '1px solid var(--accent-pink)' : '1px solid var(--border-subtle)',
+                      background: channelFeed === niche.id ? 'rgba(236, 72, 153, 0.12)' : 'var(--bg-elevated)',
+                      border: channelFeed === niche.id ? '1px solid var(--accent-pink)' : '1px solid var(--border)',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease'
                     }}
                   >
-                    <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px' }}>{niche.name}</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '4px', color: 'var(--text-primary)' }}>{niche.name}</div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{niche.channels}</div>
                   </div>
                 ))}
@@ -334,7 +335,7 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
           )}
 
           {/* 5 Pro Viral Filters Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '14px', background: 'rgba(255, 255, 255, 0.02)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '14px', background: 'var(--bg-elevated)', padding: '14px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
             
             {/* 1. Min View Count */}
             <div>
@@ -345,7 +346,7 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
               <select
                 value={minViews}
                 onChange={(e) => setMinViews(parseInt(e.target.value))}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-input)', color: '#fff', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: '0.82rem', outline: 'none' }}
               >
                 <option value={1000000}>🥇 1M+ Views (Proven Viral)</option>
                 <option value={500000}>🥈 500K+ Views (Fast)</option>
@@ -356,14 +357,14 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
 
             {/* 2. Recency / Velocity */}
             <div>
-              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-blue)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
                 <Clock size={13} />
                 <span>Upload Recency:</span>
               </label>
               <select
                 value={recency}
                 onChange={(e) => setRecency(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-input)', color: '#fff', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: '0.82rem', outline: 'none' }}
               >
                 <option value="this_year">📅 This Year (Trending)</option>
                 <option value="this_month">🚀 This Month (Fresh Explosive)</option>
@@ -373,14 +374,14 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
 
             {/* 3. Language Lock */}
             <div>
-              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#34d399', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
+              <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--green)', display: 'flex', alignItems: 'center', gap: '4px', marginBottom: '6px' }}>
                 <Globe size={13} />
                 <span>Language Lock:</span>
               </label>
               <select
                 value={languageLock}
                 onChange={(e) => setLanguageLock(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-input)', color: '#fff', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: '0.82rem', outline: 'none' }}
               >
                 <option value="en">🇬🇧 English Only (Filtered)</option>
                 <option value="any">🌐 Any Language</option>
@@ -395,7 +396,7 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
               <select
                 value={count}
                 onChange={(e) => setCount(parseInt(e.target.value))}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-input)', color: '#fff', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: '0.82rem', outline: 'none' }}
               >
                 <option value={1}>1 Viral Short</option>
                 <option value={3}>3 Viral Shorts (Recommended)</option>
@@ -411,7 +412,7 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
               <select
                 value={selectedPreset}
                 onChange={(e) => setSelectedPreset(e.target.value)}
-                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-input)', color: '#fff', border: '1px solid var(--border-subtle)', fontSize: '0.82rem', outline: 'none' }}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: '0.82rem', outline: 'none' }}
               >
                 <option value="youtube_bypass">⚡ YouTube Content ID Bypass</option>
                 <option value="insta_shorts">📱 Instagram & TikTok Mode</option>
@@ -457,7 +458,7 @@ export default function AutoViralStudio({ onOpenKeyModal }) {
                 width: '100%',
                 padding: '11px 16px',
                 borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--border-subtle)',
+                border: '1px solid var(--border)',
                 background: 'var(--bg-input)',
                 color: 'var(--text-primary)',
                 fontSize: '0.9rem',

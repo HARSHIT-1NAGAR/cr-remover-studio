@@ -584,21 +584,28 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                       }}
                       style={{
                         padding: '10px 12px', borderRadius: 'var(--radius-md)',
-                        background: isSel ? 'var(--bg-secondary)' : 'rgba(255,255,255,0.02)',
-                        border: `1px solid ${isSel ? 'var(--accent)' : 'var(--border)'}`,
+                        background: isSel ? 'var(--accent-muted)' : 'var(--bg-elevated)',
+                        border: isSel ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                        boxShadow: isSel ? '0 0 0 1px var(--accent-border)' : 'none',
                         cursor: 'pointer', transition: 'all var(--transition)',
                         display: 'flex', flexDirection: 'column', gap: '4px'
                       }}
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: isSel ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                        <span style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: isSel ? 'var(--accent)' : 'var(--text-primary)' }}>
                           {n.name.split('&')[0]}
                         </span>
-                        <span style={{ fontSize: '9px', background: isSel ? 'var(--accent)' : 'var(--border)', color: '#fff', padding: '1px 6px', borderRadius: '4px', fontWeight: 600 }}>
+                        <span style={{
+                          fontSize: '9px',
+                          background: isSel ? 'var(--accent)' : 'var(--bg-tertiary)',
+                          color: isSel ? '#ffffff' : 'var(--text-secondary)',
+                          border: isSel ? 'none' : '1px solid var(--border)',
+                          padding: '1px 6px', borderRadius: '4px', fontWeight: 700
+                        }}>
                           {n.badge}
                         </span>
                       </div>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.2 }}>
+                      <span style={{ fontSize: '10px', color: 'var(--text-secondary)', lineHeight: 1.2 }}>
                         {n.description.slice(0, 45)}…
                       </span>
                     </div>
@@ -627,10 +634,11 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                     onClick={() => setBatchCount(cnt)}
                     style={{
                       padding: '8px', borderRadius: 'var(--radius-sm)',
-                      background: batchCount === cnt ? 'var(--accent)' : 'var(--bg-secondary)',
-                      color: batchCount === cnt ? '#fff' : 'var(--text-secondary)',
-                      border: `1px solid ${batchCount === cnt ? 'var(--accent)' : 'var(--border)'}`,
-                      fontWeight: 600, fontSize: 'var(--text-xs)', cursor: 'pointer'
+                      background: batchCount === cnt ? 'var(--accent)' : 'var(--bg-elevated)',
+                      color: batchCount === cnt ? '#ffffff' : 'var(--text-primary)',
+                      border: batchCount === cnt ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                      fontWeight: 600, fontSize: 'var(--text-xs)', cursor: 'pointer',
+                      transition: 'all var(--transition)'
                     }}
                   >
                     {cnt} Videos
@@ -644,7 +652,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                 {/* Voice Selection with Live Audition */}
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                    <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>
                       🎙️ Neural Voice
                     </label>
                     <button
@@ -658,7 +666,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                   <select
                     value={selectedVoice}
                     onChange={e => setSelectedVoice(e.target.value)}
-                    style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
+                    style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
                   >
                     {voices.map(v => (
                       <option key={v.id} value={v.id}>{v.name} ({v.gender})</option>
@@ -668,13 +676,13 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
 
                 {/* Subtitle Style */}
                 <div>
-                  <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
                     ✍️ Subtitle Style
                   </label>
                   <select
                     value={selectedSubStyle}
                     onChange={e => setSelectedSubStyle(e.target.value)}
-                    style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
+                    style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
                   >
                     <option value="hormozi_yellow">Hormozi (Yellow & Stroke)</option>
                     <option value="beast_green">MrBeast (Vibrant Green)</option>
@@ -686,7 +694,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                 {/* BGM Track with Live Music Preview */}
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                    <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>
                       🎵 Background Music
                     </label>
                     <button
@@ -700,7 +708,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                   <select
                     value={selectedBgm}
                     onChange={e => setSelectedBgm(e.target.value)}
-                    style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
+                    style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
                   >
                     <option value="phonk_drive">Phonk Drive (Viral Energy)</option>
                     <option value="deep_tension">Deep Tension (Suspense)</option>
@@ -712,13 +720,13 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
 
                 {/* B-Roll Theme */}
                 <div>
-                  <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
                     🎞️ Stock B-Roll Vault
                   </label>
                   <select
                     value={selectedBroll}
                     onChange={e => setSelectedBroll(e.target.value)}
-                    style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
+                    style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
                   >
                     <option value="minecraft_parkour">Minecraft Parkour (Gameplay)</option>
                     <option value="subway_surfers">Subway Runner (Gameplay)</option>
@@ -733,9 +741,9 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
               </div>
 
               {/* Auto-SFX Indicator */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'rgba(34, 197, 94, 0.08)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(34, 197, 94, 0.2)' }}>
-                <Volume2 size={14} color="#22c55e" />
-                <span style={{ fontSize: '11px', color: '#22c55e', fontWeight: 600 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--green-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(34, 197, 94, 0.25)' }}>
+                <Volume2 size={14} color="var(--green)" />
+                <span style={{ fontSize: '11px', color: 'var(--green)', fontWeight: 600 }}>
                   Intelligent Auto-SFX Active: Sub-bass hook drop + transition whooshes + power word dings automatically staged.
                 </span>
               </div>
@@ -970,7 +978,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
               <button
                 onClick={fetchTrends}
                 disabled={isLoadingTrends}
-                style={{ padding: '6px 10px', fontSize: '11px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: '#fff', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                style={{ padding: '6px 10px', fontSize: '11px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-primary)', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
               >
                 <RefreshCw size={12} className={isLoadingTrends ? 'spin' : ''} />
                 <span>Refresh</span>
@@ -1088,7 +1096,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                 <select
                   value={podcastHostVoice}
                   onChange={e => setPodcastHostVoice(e.target.value)}
-                  style={{ width: '100%', padding: '7px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: '#fff', border: '1px solid var(--border)', fontSize: '11px' }}
+                  style={{ width: '100%', padding: '7px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: '11px' }}
                 >
                   {voices.map(v => <option key={v.id} value={v.id}>{v.name} ({v.gender})</option>)}
                 </select>
@@ -1101,7 +1109,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                 <select
                   value={podcastGuestVoice}
                   onChange={e => setPodcastGuestVoice(e.target.value)}
-                  style={{ width: '100%', padding: '7px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: '#fff', border: '1px solid var(--border)', fontSize: '11px' }}
+                  style={{ width: '100%', padding: '7px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: '11px' }}
                 >
                   {voices.map(v => <option key={v.id} value={v.id}>{v.name} ({v.gender})</option>)}
                 </select>
@@ -1242,7 +1250,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
               <button
                 onClick={() => handleTelegramAction('test_message')}
                 disabled={isSendingTgTest}
-                style={{ padding: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', color: '#fff', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                style={{ padding: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-primary)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
               >
                 <Send size={14} />
                 <span>{isSendingTgTest ? 'Sending...' : 'Send Test Msg'}</span>
@@ -1325,13 +1333,13 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', marginTop: '4px' }}>
                     <button
                       onClick={() => copyToClipboard(item.metadata?.yt_titles?.[0] + '\n' + item.metadata?.yt_description, `cal_yt_${idx}`)}
-                      style={{ padding: '6px', fontSize: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                      style={{ padding: '6px', fontSize: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-primary)', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
                     >
                       {copiedKey === `cal_yt_${idx}` ? 'Copied!' : 'Copy YouTube'}
                     </button>
                     <button
                       onClick={() => copyToClipboard(item.metadata?.fb_caption, `cal_fb_${idx}`)}
-                      style={{ padding: '6px', fontSize: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
+                      style={{ padding: '6px', fontSize: '10px', background: 'var(--bg-card)', border: '1px solid var(--border)', color: 'var(--text-primary)', borderRadius: '4px', cursor: 'pointer', fontWeight: 600 }}
                     >
                       {copiedKey === `cal_fb_${idx}` ? 'Copied!' : 'Copy FB Reel'}
                     </button>
@@ -1376,7 +1384,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                 {isSearchingBroll ? 'Searching…' : 'Search'}
               </button>
 
-              <label style={{ padding: '8px 14px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: '#fff', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <label style={{ padding: '8px 14px', background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: 'var(--text-primary)', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
                 <UploadCloud size={14} />
                 <span>{isUploadingBroll ? 'Uploading...' : 'Upload Clip'}</span>
                 <input type="file" accept="video/mp4,video/webm" onChange={handleUploadBrollFile} style={{ display: 'none' }} />

@@ -571,9 +571,9 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
                     ? 'linear-gradient(135deg, var(--accent-cyan), var(--accent-indigo))'
                     : isPast
                     ? 'rgba(6, 182, 212, 0.12)'
-                    : 'rgba(255, 255, 255, 0.03)',
-                  border: isActive ? '1px solid var(--accent-cyan)' : '1px solid var(--border-subtle)',
-                  color: isActive ? 'white' : isPast ? 'var(--accent-cyan)' : 'var(--text-secondary)',
+                    : 'var(--bg-elevated)',
+                  border: isActive ? '1px solid var(--accent-cyan)' : '1px solid var(--border)',
+                  color: isActive ? '#ffffff' : isPast ? 'var(--accent-cyan)' : 'var(--text-secondary)',
                   padding: '7px 14px',
                   borderRadius: 'var(--radius-sm)',
                   fontSize: '0.8rem',
@@ -614,8 +614,8 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
             {/* AI Topic Prompt Helper */}
             <div
               style={{
-                background: 'rgba(0, 0, 0, 0.4)',
-                border: '1px solid var(--border-subtle)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
                 borderRadius: 'var(--radius-md)',
                 padding: '16px',
                 display: 'flex',
@@ -759,8 +759,8 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
                       style={{
                         padding: '9px 12px',
                         borderRadius: 'var(--radius-sm)',
-                        background: isSelected ? 'rgba(99, 102, 241, 0.18)' : 'rgba(255, 255, 255, 0.02)',
-                        border: isSelected ? '1px solid var(--accent-indigo)' : '1px solid var(--border-subtle)',
+                        background: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-elevated)',
+                        border: isSelected ? '1.5px solid var(--accent-indigo)' : '1px solid var(--border)',
                         cursor: 'pointer',
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -769,10 +769,10 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: 800, fontSize: '0.85rem', color: isSelected ? '#c4b5fd' : 'white' }}>
+                        <div style={{ fontWeight: 800, fontSize: '0.85rem', color: isSelected ? 'var(--accent-indigo)' : 'var(--text-primary)' }}>
                           {v.name}
                         </div>
-                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
                           {v.description}
                         </div>
                       </div>
@@ -780,7 +780,7 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
                         className="mono-metric"
                         style={{
                           fontSize: '0.68rem',
-                          background: 'rgba(255, 255, 255, 0.05)',
+                          background: 'var(--bg-tertiary)',
                           padding: '2px 6px',
                           borderRadius: '4px',
                           color: 'var(--text-secondary)'
@@ -830,11 +830,11 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
             {/* Custom Voice Upload Alternative */}
             <div
               style={{
-                border: '1px dashed var(--border-subtle)',
+                border: '1px dashed var(--border)',
                 borderRadius: 'var(--radius-md)',
                 padding: '14px',
                 textAlign: 'center',
-                background: 'rgba(0, 0, 0, 0.3)'
+                background: 'var(--bg-elevated)'
               }}
             >
               <div style={{ fontSize: '0.82rem', fontWeight: 800, marginBottom: '2px' }}>
@@ -935,7 +935,7 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
                       lineHeight: '1.5',
                       color: 'var(--text-primary)',
                       margin: '0 0 10px 0',
-                      background: 'rgba(0, 0, 0, 0.4)',
+                      background: 'var(--bg-elevated)',
                       padding: '10px',
                       borderRadius: 'var(--radius-sm)',
                       borderLeft: '3px solid var(--accent-cyan)'
@@ -949,8 +949,8 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
                       <span
                         key={kIdx}
                         style={{
-                          background: 'rgba(255, 255, 255, 0.04)',
-                          border: '1px solid var(--border-subtle)',
+                          background: 'var(--bg-tertiary)',
+                          border: '1px solid var(--border)',
                           padding: '2px 6px',
                           borderRadius: '4px',
                           fontSize: '0.68rem',
@@ -1009,8 +1009,8 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
 
                   <div
                     style={{
-                      background: 'rgba(0, 0, 0, 0.4)',
-                      border: scene.video_source_path ? '1px solid var(--accent-emerald)' : '1px dashed var(--border-subtle)',
+                      background: 'var(--bg-elevated)',
+                      border: scene.video_source_path ? '1px solid var(--accent-emerald)' : '1px dashed var(--border)',
                       borderRadius: 'var(--radius-sm)',
                       padding: '8px 10px',
                       display: 'flex',
@@ -1027,7 +1027,9 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
 
                     <label
                       style={{
-                        background: 'rgba(255, 255, 255, 0.08)',
+                        background: 'var(--bg-card)',
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-primary)',
                         padding: '4px 8px',
                         borderRadius: '4px',
                         fontSize: '0.7rem',
@@ -1077,8 +1079,8 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
                     style={{
                       padding: '12px',
                       borderRadius: 'var(--radius-md)',
-                      background: isSelected ? 'rgba(6, 182, 212, 0.16)' : 'rgba(255, 255, 255, 0.02)',
-                      border: isSelected ? '2px solid var(--accent-cyan)' : '1px solid var(--border-subtle)',
+                      background: isSelected ? 'rgba(6, 182, 212, 0.12)' : 'var(--bg-elevated)',
+                      border: isSelected ? '2px solid var(--accent-cyan)' : '1px solid var(--border)',
                       cursor: 'pointer',
                       transition: 'all 0.15s ease',
                       display: 'flex',
@@ -1092,11 +1094,11 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
                         <span style={{ fontSize: '0.65rem', color: 'var(--accent-cyan)', fontWeight: 800 }}>
                           {preset.creator}
                         </span>
-                        <span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '1px 4px', borderRadius: '3px' }}>
+                        <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', padding: '1px 4px', borderRadius: '3px' }}>
                           {preset.badge}
                         </span>
                       </div>
-                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'white', marginBottom: '4px' }}>
+                      <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)', marginBottom: '4px' }}>
                         {preset.name}
                       </div>
                     </div>
@@ -1123,8 +1125,8 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
             {/* Customization Sliders & Controls */}
             <div
               style={{
-                background: 'rgba(0, 0, 0, 0.45)',
-                border: '1px solid var(--border-subtle)',
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
                 borderRadius: 'var(--radius-md)',
                 padding: '16px',
                 display: 'flex',
@@ -1134,7 +1136,7 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Palette size={14} color="var(--accent-cyan)" />
-                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'white', letterSpacing: '0.5px' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '0.5px' }}>
                   FINE-TUNE CREATOR PARAMETERS
                 </span>
               </div>
@@ -1337,8 +1339,8 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
                       style={{
                         padding: '8px 10px',
                         borderRadius: 'var(--radius-sm)',
-                        background: isSelected ? 'rgba(99, 102, 241, 0.22)' : 'rgba(255, 255, 255, 0.02)',
-                        border: isSelected ? '1px solid var(--accent-indigo)' : '1px solid var(--border-subtle)',
+                        background: isSelected ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-elevated)',
+                        border: isSelected ? '1.5px solid var(--accent-indigo)' : '1px solid var(--border)',
                         cursor: 'pointer',
                         display: 'flex',
                         justifyContent: 'space-between',
@@ -1346,8 +1348,8 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
                       }}
                     >
                       <div>
-                        <div style={{ fontSize: '0.76rem', fontWeight: 800 }}>{track.name}</div>
-                        <div style={{ fontSize: '0.66rem', color: 'var(--text-muted)' }}>{track.genre}</div>
+                        <div style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--text-primary)' }}>{track.name}</div>
+                        <div style={{ fontSize: '0.66rem', color: 'var(--text-secondary)' }}>{track.genre}</div>
                       </div>
                       {track.id !== 'none' && (
                         <div style={{ color: isPlaying ? 'var(--accent-pink)' : 'var(--accent-indigo)' }}>
@@ -1360,7 +1362,7 @@ export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
               </div>
 
               {/* Ducking Slider */}
-              <div style={{ background: 'rgba(0,0,0,0.35)', padding: '10px 14px', borderRadius: 'var(--radius-sm)' }}>
+              <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', padding: '10px 14px', borderRadius: 'var(--radius-sm)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', marginBottom: '2px' }}>
                   <span style={{ color: 'var(--text-secondary)' }}>🎙️ Voice Auto-Ducking (Lowers BGM volume when voice speaks)</span>
                   <span className="mono-metric" style={{ color: 'var(--accent-cyan)', fontWeight: 800 }}>{Math.round(duckingIntensity * 100)}%</span>

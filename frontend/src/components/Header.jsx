@@ -1,5 +1,5 @@
 import React from 'react'
-import { Clapperboard, Sparkles, Bot, Shield, Zap, Cpu, Rocket, Key, FolderOpen } from 'lucide-react'
+import { Clapperboard, Sparkles, Bot, Shield, Zap, Cpu, Rocket, Key, FolderOpen, Sun, Moon } from 'lucide-react'
 
 const MODES = [
   { key: 'autopilot', label: '⚡ Auto-Pilot Factory', icon: Rocket },
@@ -9,7 +9,16 @@ const MODES = [
 ]
 
 
-export default function Header({ systemInfo, activeMode, onModeChange, onOpenKeyModal, onOpenExportsModal, keyCount = 0 }) {
+export default function Header({
+  systemInfo,
+  activeMode,
+  onModeChange,
+  onOpenKeyModal,
+  onOpenExportsModal,
+  keyCount = 0,
+  theme = 'dark',
+  onToggleTheme
+}) {
   return (
     <header className="app-header">
       {/* Brand */}
@@ -43,13 +52,37 @@ export default function Header({ systemInfo, activeMode, onModeChange, onOpenKey
 
       {/* Hardware Status, Desktop Vault & Gemini Key Pool */}
       <div className="header-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* Dark / Light Theme Toggle Button */}
+        <button
+          onClick={onToggleTheme}
+          style={{
+            background: theme === 'light' ? 'rgba(245, 158, 11, 0.12)' : 'var(--bg-card)',
+            border: theme === 'light' ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid var(--border)',
+            color: theme === 'light' ? '#d97706' : 'var(--text-secondary)',
+            padding: '6px 11px',
+            borderRadius: 'var(--radius-full, 9999px)',
+            fontSize: '0.78rem',
+            fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: theme === 'light' ? '0 0 10px rgba(245, 158, 11, 0.2)' : 'none'
+          }}
+          title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+        >
+          {theme === 'light' ? <Sun size={13} color="#f59e0b" /> : <Moon size={13} color="var(--accent)" />}
+          <span>{theme === 'light' ? 'Light' : 'Dark'}</span>
+        </button>
+
         {/* Desktop Exports Vault Button */}
         <button
           onClick={onOpenExportsModal}
           style={{
             background: 'rgba(56, 189, 248, 0.1)',
             border: '1px solid rgba(56, 189, 248, 0.3)',
-            color: '#7dd3fc',
+            color: '#38bdf8',
             padding: '6px 12px',
             borderRadius: 'var(--radius-full, 9999px)',
             fontSize: '0.78rem',
@@ -71,9 +104,9 @@ export default function Header({ systemInfo, activeMode, onModeChange, onOpenKey
         <button
           onClick={onOpenKeyModal}
           style={{
-            background: keyCount > 0 ? 'rgba(99, 102, 241, 0.12)' : 'rgba(255, 255, 255, 0.05)',
-            border: keyCount > 0 ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid rgba(255, 255, 255, 0.1)',
-            color: keyCount > 0 ? '#c7d2fe' : '#94a3b8',
+            background: keyCount > 0 ? 'rgba(99, 102, 241, 0.12)' : 'var(--bg-card)',
+            border: keyCount > 0 ? '1px solid rgba(99, 102, 241, 0.35)' : '1px solid var(--border)',
+            color: keyCount > 0 ? 'var(--accent)' : 'var(--text-muted)',
             padding: '6px 12px',
             borderRadius: 'var(--radius-full, 9999px)',
             fontSize: '0.78rem',
@@ -87,10 +120,10 @@ export default function Header({ systemInfo, activeMode, onModeChange, onOpenKey
           }}
           title="Manage Gemini Multi-API Key Pool (Failover on Limit)"
         >
-          <Key size={13} color={keyCount > 0 ? '#818cf8' : '#94a3b8'} />
+          <Key size={13} color={keyCount > 0 ? 'var(--accent)' : 'var(--text-muted)'} />
           <span>{keyCount > 0 ? `AI Keys (${keyCount})` : 'Set Gemini Keys'}</span>
           {keyCount > 0 && (
-            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }} />
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--green)', boxShadow: '0 0 6px var(--green)' }} />
           )}
         </button>
 

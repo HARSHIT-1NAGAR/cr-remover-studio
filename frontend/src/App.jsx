@@ -19,6 +19,20 @@ export default function App() {
   const [isExportsModalOpen, setIsExportsModalOpen] = useState(false)
   const [poolKeyCount, setPoolKeyCount] = useState(0)
 
+  // Dark / White (Light) Theme State with localStorage persistence
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('cr_theme') || 'dark'
+  })
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme)
+    localStorage.setItem('cr_theme', theme)
+  }, [theme])
+
+  const toggleTheme = () => {
+    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'))
+  }
+
 
   const [presets, setPresets] = useState(null)
   const [selectedPreset, setSelectedPreset] = useState('youtube_bypass')
@@ -193,6 +207,8 @@ export default function App() {
         onOpenKeyModal={() => setIsKeyModalOpen(true)}
         onOpenExportsModal={() => setIsExportsModalOpen(true)}
         keyCount={poolKeyCount}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       {activeMode === 'autopilot' ? (

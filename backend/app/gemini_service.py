@@ -6,7 +6,9 @@ Generates viral Shorts search queries, high-CTR titles, hooks, SEO tags, and AI 
 from typing import Dict, Any, List, Optional
 import json
 import os
+import re
 import google.generativeai as genai
+
 
 
 DEFAULT_GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")

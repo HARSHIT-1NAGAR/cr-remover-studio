@@ -26,11 +26,15 @@ backend/storage/temp/*
 !backend/storage/temp/.gitkeep
 backend/storage/assets/broll/*.mp4
 !backend/storage/assets/broll/.gitkeep
+backend/storage/*.json
+backend/storage/gemini_keys.json
 
 # Environment & Secret Keys
 .env
 .env.local
 .env.*.local
+*.env
+
 
 # IDE & OS Specific
 .vscode/

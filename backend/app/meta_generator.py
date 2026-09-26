@@ -1,7 +1,7 @@
 """
 YouTube Shorts & Facebook Reels SEO & Metadata Engine.
 Generates high-CTR viral titles, algorithmic descriptions, pinned comment triggers,
-and multi-platform hashtags formatted for 1-click publishing.
+and multi-platform hashtags formatted for 1-click publishing with GeminiKeyPool.
 """
 
 from pathlib import Path
@@ -9,7 +9,7 @@ import os
 import re
 import json
 from typing import Dict, Any, List, Optional
-import google.generativeai as genai
+from app.gemini_pool import gemini_pool
 
 
 class MetaGenerator:
@@ -26,41 +26,25 @@ class MetaGenerator:
         """
         Generates comprehensive SEO metadata for YouTube Shorts & Facebook Reels.
         """
-        api_key = gemini_api_key.strip() if gemini_api_key else os.getenv("GEMINI_API_KEY", "")
+        prompt = (
+            f"You are the #1 algorithmic growth strategist for YouTube Shorts and Facebook Reels.\n"
+            f"Topic: {topic}\n"
+            f"Niche: {niche}\n"
+            f"Script/Context: {script_summary}\n\n"
+            f"Generate viral metadata formatted in JSON ONLY with this structure:\n"
+            f"{{\n"
+            f'  "yt_titles": ["Title 1 (<50 chars, high curiosity)", "Title 2 (shock value)", "Title 3 (question hook)"],\n'
+            f'  "yt_description": "2-3 sentences with high search volume keywords, #shorts, and subscribe CTA.",\n'
+            f'  "yt_tags": ["#shorts", "#viral", "#trending", ...],\n'
+            f'  "pinned_comment": "Controversial/engaging question to make viewers comment immediately.",\n'
+            f'  "fb_caption": "Short emotional Facebook Reel caption with emojis, question, and 5 hashtags.",\n'
+            f'  "fb_tags": ["#reels", "#viralreels", "#fyp", ...]\n'
+            f"}}"
+        )
 
-        if api_key:
-            try:
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                prompt = (
-                    f"You are the #1 algorithmic growth strategist for YouTube Shorts and Facebook Reels.\n"
-                    f"Topic: {topic}\n"
-                    f"Niche: {niche}\n"
-                    f"Script/Context: {script_summary}\n\n"
-                    f"Generate viral metadata formatted in JSON ONLY with this structure:\n"
-                    f"{{\n"
-                    f'  "yt_titles": ["Title 1 (<50 chars, high curiosity)", "Title 2 (shock value)", "Title 3 (question hook)"],\n'
-                    f'  "yt_description": "2-3 sentences with high search volume keywords, #shorts, and subscribe CTA.",\n'
-                    f'  "yt_tags": ["#shorts", "#viral", "#trending", ...],\n'
-                    f'  "pinned_comment": "Controversial/engaging question to make viewers comment immediately.",\n'
-                    f'  "fb_caption": "Short emotional Facebook Reel caption with emojis, question, and 5 hashtags.",\n'
-                    f'  "fb_tags": ["#reels", "#viralreels", "#fyp", ...]\n'
-                    f"}}"
-                )
-                response = model.generate_content(prompt)
-                text = response.text.strip()
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0].strip()
-                elif "```" in text:
-                    text = text.split("```")[1].split("```")[0].strip()
-                return json.loads(text)
-            except Exception as e:
-                print(f"Gemini metadata fallback: {e}")
-
-        # Procedural fallback metadata
         clean_topic = topic.title()
         niche_tag = niche.replace("_", "").lower()
-        return {
+        fallback = {
             "yt_titles": [
                 f"The Secret Truth About {clean_topic} 😱",
                 f"Never Do This With {clean_topic}...",
@@ -82,6 +66,16 @@ class MetaGenerator:
             ),
             "fb_tags": ["#reels", "#viralreels", f"#{niche_tag}", "#trending", "#fyp"]
         }
+
+        try:
+            return gemini_pool.generate_json(
+                prompt=prompt,
+                api_keys=gemini_api_key,
+                fallback=fallback
+            )
+        except Exception as e:
+            print(f"[MetaGenerator] Gemini metadata fallback: {e}")
+            return fallback
 
     @classmethod
     def save_info_file(cls, dest_file: Path, meta: Dict[str, Any], video_filename: str):

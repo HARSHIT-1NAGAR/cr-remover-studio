@@ -8,11 +8,15 @@ import ProgressModal from './components/ProgressModal'
 import AutoViralStudio from './components/AutoViralStudio'
 import AIShortsStudio from './components/AIShortsStudio'
 import AutoPilotStudio from './components/AutoPilotStudio'
+import GeminiKeyModal from './components/GeminiKeyModal'
 import { Sparkles } from 'lucide-react'
 
 export default function App() {
   const [activeMode, setActiveMode] = useState('autopilot')
   const [systemInfo, setSystemInfo] = useState(null)
+  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false)
+  const [poolKeyCount, setPoolKeyCount] = useState(0)
+
 
   const [presets, setPresets] = useState(null)
   const [selectedPreset, setSelectedPreset] = useState('youtube_bypass')
@@ -65,6 +69,15 @@ export default function App() {
         setPresets(data)
         if (data?.youtube_bypass) {
           setParams(p => ({ ...p, ...data.youtube_bypass.params, preset: 'youtube_bypass' }))
+        }
+      })
+      .catch(console.error)
+
+    fetch('/api/gemini/pool-status')
+      .then(r => r.json())
+      .then(data => {
+        if (data && typeof data.active_keys === 'number') {
+          setPoolKeyCount(data.total_keys || data.active_keys)
         }
       })
       .catch(console.error)
@@ -171,16 +184,21 @@ export default function App() {
 
   return (
     <div className="app-container">
-      <Header systemInfo={systemInfo} activeMode={activeMode} onModeChange={setActiveMode} />
+      <Header
+        systemInfo={systemInfo}
+        activeMode={activeMode}
+        onModeChange={setActiveMode}
+        onOpenKeyModal={() => setIsKeyModalOpen(true)}
+        keyCount={poolKeyCount}
+      />
 
       {activeMode === 'autopilot' ? (
-        <AutoPilotStudio systemInfo={systemInfo} />
+        <AutoPilotStudio systemInfo={systemInfo} onOpenKeyModal={() => setIsKeyModalOpen(true)} />
       ) : activeMode === 'ai_shorts' ? (
-        <AIShortsStudio systemInfo={systemInfo} />
+        <AIShortsStudio systemInfo={systemInfo} onOpenKeyModal={() => setIsKeyModalOpen(true)} />
       ) : activeMode === 'auto_viral' ? (
-        <AutoViralStudio />
+        <AutoViralStudio onOpenKeyModal={() => setIsKeyModalOpen(true)} />
       ) : jobStatus?.status === 'completed' ? (
-
         <VideoComparePlayer jobResult={jobStatus} originalVideo={uploadedVideo} onReset={handleReset} />
       ) : (
         <div className="main-grid">
@@ -216,6 +234,17 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* Gemini Multi-Key Pool Manager Modal */}
+      <GeminiKeyModal
+        isOpen={isKeyModalOpen}
+        onClose={() => setIsKeyModalOpen(false)}
+        onKeysUpdated={(pool) => {
+          if (pool && typeof pool.active_keys === 'number') {
+            setPoolKeyCount(pool.total_keys || pool.active_keys)
+          }
+        }}
+      />
 
       {/* Processing Modal — Studio mode */}
       {isProcessing && activeMode === 'studio' && (

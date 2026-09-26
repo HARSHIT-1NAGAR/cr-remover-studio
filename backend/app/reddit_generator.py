@@ -1,7 +1,7 @@
 """
 Reddit Story & Viral Split-Screen Generator.
 Generates viral Reddit drama, confessions, and curiosity stories,
-creates authentic dark-mode Reddit post card overlays, and bundles them into 9:16 Shorts.
+creates authentic dark-mode Reddit post card overlays, and bundles them into 9:16 Shorts with GeminiKeyPool.
 """
 
 from pathlib import Path
@@ -9,6 +9,7 @@ import os
 import re
 import json
 import uuid
+import random
 import asyncio
 from typing import Dict, Any, List, Optional
 from PIL import Image, ImageDraw, ImageFont
@@ -18,7 +19,7 @@ from app.broll_harvester import BRollHarvester
 from app.tts_engine import TTSEngine
 from app.editor_schemas import AIShortsRenderRequest, SceneBlock, WordTiming
 from app.editor_engine import AIShortsRenderer
-import google.generativeai as genai
+from app.gemini_pool import gemini_pool
 
 FONTS_DIR = STORAGE_DIR / "assets" / "fonts"
 
@@ -36,36 +37,20 @@ class RedditStoryGenerator:
         """
         Generates a compelling Reddit story with title, author, upvotes, and narration script.
         """
-        api_key = gemini_api_key.strip() if gemini_api_key else os.getenv("GEMINI_API_KEY", "")
+        prompt = (
+            f"Create a viral Reddit Shorts story for {subreddit}.\n"
+            f"Custom Prompt: {custom_prompt or 'An unbelievable true story with unexpected twist'}\n"
+            f"Target length: 110-140 words (~35 seconds spoken).\n\n"
+            f"Return JSON ONLY with this format:\n"
+            f"{{\n"
+            f'  "subreddit": "{subreddit}",\n'
+            f'  "title": "Compelling Reddit Post Title (e.g. My landlord tried to keep my $3,000 deposit, so I took his whole company down...)",\n'
+            f'  "author": "u/throwaway_{uuid.uuid4().hex[:4]}",\n'
+            f'  "upvotes": "28.4k",\n'
+            f'  "script": "The full first-person spoken story text without stage directions."\n'
+            f"}}"
+        )
 
-        if api_key:
-            try:
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                prompt = (
-                    f"Create a viral Reddit Shorts story for {subreddit}.\n"
-                    f"Custom Prompt: {custom_prompt or 'An unbelievable true story with unexpected twist'}\n"
-                    f"Target length: 110-140 words (~35 seconds spoken).\n\n"
-                    f"Return JSON ONLY with this format:\n"
-                    f"{{\n"
-                    f'  "subreddit": "{subreddit}",\n'
-                    f'  "title": "Compelling Reddit Post Title (e.g. My landlord tried to keep my $3,000 deposit, so I took his whole company down...)",\n'
-                    f'  "author": "u/throwaway_{uuid.uuid4().hex[:4]}",\n'
-                    f'  "upvotes": "28.4k",\n'
-                    f'  "script": "The full first-person spoken story text without stage directions."\n'
-                    f"}}"
-                )
-                response = model.generate_content(prompt)
-                text = response.text.strip()
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0].strip()
-                elif "```" in text:
-                    text = text.split("```")[1].split("```")[0].strip()
-                return json.loads(text)
-            except Exception as e:
-                print(f"Gemini Reddit story fallback: {e}")
-
-        # Procedural fallback Reddit stories
         fallback_stories = [
             {
                 "subreddit": subreddit,
@@ -95,8 +80,17 @@ class RedditStoryGenerator:
                 )
             }
         ]
-        import random
-        return random.choice(fallback_stories)
+        fallback = random.choice(fallback_stories)
+
+        try:
+            return gemini_pool.generate_json(
+                prompt=prompt,
+                api_keys=gemini_api_key,
+                fallback=fallback
+            )
+        except Exception as e:
+            print(f"[RedditGenerator] Gemini Reddit story fallback: {e}")
+            return fallback
 
     @classmethod
     def create_reddit_card_image(

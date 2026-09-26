@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Rocket, Sparkles, Key, CheckCircle2, Folder, Copy, Check, Loader2, AlertCircle, Play, Download, ThumbsUp, ThumbsDown, Trash2, CheckCheck, X, Flame, Clock, Globe, Filter, Compass, Award } from 'lucide-react'
 
-export default function AutoViralStudio() {
+export default function AutoViralStudio({ onOpenKeyModal }) {
   const [topic, setTopic] = useState('Dark Psychology Facts')
   const [count, setCount] = useState(3)
   const [geminiApiKey, setGeminiApiKey] = useState('')
@@ -43,7 +43,7 @@ export default function AutoViralStudio() {
 
   // Load saved Gemini API Key from localStorage
   useEffect(() => {
-    const savedKey = localStorage.getItem('cr_gemini_api_key')
+    const savedKey = localStorage.getItem('cr_gemini_api_keys') || localStorage.getItem('cr_gemini_api_key')
     if (savedKey) {
       setGeminiApiKey(savedKey)
     }
@@ -51,7 +51,15 @@ export default function AutoViralStudio() {
 
   const handleSaveApiKey = (val) => {
     setGeminiApiKey(val)
+    localStorage.setItem('cr_gemini_api_keys', val)
     localStorage.setItem('cr_gemini_api_key', val)
+    if (val.trim()) {
+      fetch('/api/gemini/pool-keys', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keys_text: val, persist: true })
+      }).catch(console.error)
+    }
   }
 
   const handleSelectCurated = (niche) => {
@@ -413,18 +421,36 @@ export default function AutoViralStudio() {
 
           </div>
 
-          {/* Gemini API Key */}
+          {/* Gemini Multi-Key Pool */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
               <label style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-purple)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Key size={14} />
-                <span>Google Gemini API Key (Flash-Lite Preloaded):</span>
+                <span>Google Gemini API Keys (Multi-Key Pool & Failover):</span>
               </label>
-              <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600 }}>Active (3.1/2.0 Flash-Lite)</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={onOpenKeyModal}
+                  style={{
+                    background: 'rgba(99, 102, 241, 0.15)',
+                    border: '1px solid rgba(99, 102, 241, 0.3)',
+                    color: '#818cf8',
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    fontSize: '0.72rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                >
+                  ⚙️ Key Pool Manager
+                </button>
+                <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600 }}>Active (Auto-Failover)</span>
+              </div>
             </div>
             <input
               type="password"
-              placeholder="Paste Gemini API Key"
+              placeholder="Paste 1 or multiple Gemini API keys (comma or newline separated)"
               value={geminiApiKey}
               onChange={(e) => handleSaveApiKey(e.target.value)}
               style={{

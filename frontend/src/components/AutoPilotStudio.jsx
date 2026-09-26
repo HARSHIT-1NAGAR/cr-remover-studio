@@ -8,7 +8,7 @@ import {
   Plus, Trash2, Edit3, CheckCircle2, FileText, UploadCloud
 } from 'lucide-react'
 
-export default function AutoPilotStudio({ systemInfo }) {
+export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
   const [activeTab, setActiveTab] = useState('batch_factory') // batch_factory | trend_harvester | podcast_maker | calendar | broll_vault | reddit_maker | thumbnail_studio | telegram_bot
   
   // Batch Factory State
@@ -111,6 +111,9 @@ export default function AutoPilotStudio({ systemInfo }) {
     const savedChat = localStorage.getItem('cr_tg_chat')
     if (savedToken) setTelegramToken(savedToken)
     if (savedChat) setTelegramChatId(savedChat)
+
+    const savedGeminiKeys = localStorage.getItem('cr_gemini_api_keys') || localStorage.getItem('cr_gemini_api_key')
+    if (savedGeminiKeys) setGeminiApiKey(savedGeminiKeys)
   }, [])
 
   const fetchTrends = async () => {

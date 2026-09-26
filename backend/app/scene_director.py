@@ -1,6 +1,6 @@
 """
 AI Scene Director for Script-to-Scene Breakdown, Visual Keyword Matching, and B-Roll Sequencing.
-Uses Google Gemini AI with resilient rule-based NLP fallbacks.
+Uses Google Gemini AI with resilient rule-based NLP fallbacks and multi-key pool failover.
 """
 
 from pathlib import Path
@@ -9,8 +9,8 @@ import re
 import json
 import uuid
 from typing import List, Dict, Any, Optional
-import google.generativeai as genai
 from app.editor_schemas import SceneBlock
+from app.gemini_pool import gemini_pool
 
 
 class SceneDirector:
@@ -27,8 +27,6 @@ class SceneDirector:
         """
         Generates a viral, high-retention 30s-60s Shorts script using Gemini.
         """
-        api_key = gemini_api_key.strip() if gemini_api_key else os.getenv("GEMINI_API_KEY", "")
-        
         prompt = (
             f"You are a master viral YouTube Shorts and TikTok creator.\n"
             f"Topic: {topic}\n"
@@ -46,23 +44,7 @@ class SceneDirector:
             f"}}"
         )
 
-        if api_key:
-            try:
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                response = model.generate_content(prompt)
-                text = response.text.strip()
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0].strip()
-                elif "```" in text:
-                    text = text.split("```")[1].split("```")[0].strip()
-                data = json.loads(text)
-                return data
-            except Exception as e:
-                print(f"Gemini script generation fallback: {e}")
-
-        # High-retention procedural fallback script
-        return {
+        fallback = {
             "title": f"The Secret Truth About {topic}",
             "script": (
                 f"Most people have no idea about the hidden truth behind {topic}. "
@@ -71,6 +53,16 @@ class SceneDirector:
                 f"Subscribe right now if you want to know what they discovered next."
             )
         }
+
+        try:
+            return gemini_pool.generate_json(
+                prompt=prompt,
+                api_keys=gemini_api_key,
+                fallback=fallback
+            )
+        except Exception as e:
+            print(f"[SceneDirector] Gemini script generation fallback: {e}")
+            return fallback
 
     @classmethod
     async def parse_script_to_scenes(
@@ -82,8 +74,6 @@ class SceneDirector:
         Splits a narration script into 3-6 distinct scene blocks with durations,
         visual keywords for B-roll matching, camera motions, and sound FX triggers.
         """
-        api_key = gemini_api_key.strip() if gemini_api_key else os.getenv("GEMINI_API_KEY", "")
-
         prompt = (
             f"Analyze this viral Shorts narration script and break it down into 3 to 6 distinct visual scenes.\n\n"
             f"Script:\n\"{script_text}\"\n\n"
@@ -106,18 +96,14 @@ class SceneDirector:
             f"]"
         )
 
-        if api_key:
-            try:
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                response = model.generate_content(prompt)
-                text = response.text.strip()
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0].strip()
-                elif "```" in text:
-                    text = text.split("```")[1].split("```")[0].strip()
-                raw_scenes = json.loads(text)
+        try:
+            raw_scenes = gemini_pool.generate_json(
+                prompt=prompt,
+                api_keys=gemini_api_key,
+                fallback=None
+            )
 
+            if raw_scenes and isinstance(raw_scenes, list):
                 scenes = []
                 for idx, sc in enumerate(raw_scenes):
                     scenes.append(
@@ -133,8 +119,8 @@ class SceneDirector:
                     )
                 if scenes:
                     return scenes
-            except Exception as e:
-                print(f"Gemini scene parsing fallback: {e}")
+        except Exception as e:
+            print(f"[SceneDirector] Gemini scene parsing fallback: {e}")
 
         # Smart rule-based sentence chunking fallback
         sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", script_text) if s.strip()]
@@ -147,7 +133,6 @@ class SceneDirector:
 
         scenes: List[SceneBlock] = []
         for idx, sentence in enumerate(sentences):
-            # Extract basic nouns / keywords
             words = re.findall(r"\b[A-Za-z]{4,}\b", sentence)
             keywords = words[:3] if words else ["cinematic background", "4k footage"]
             keywords.append("shorts 9:16")

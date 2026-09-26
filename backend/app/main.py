@@ -30,8 +30,10 @@ from app.auto_viral import AutoViralEngine
 from app.editor_schemas import (
     GenerateTTSRequest, ParseScriptRequest, GenerateScriptFromTopicRequest, AIShortsRenderRequest,
     BatchAutoPilotRequest, GenerateThumbnailRequest, GenerateMetadataRequest, RedditStoryRequest, StockSearchRequest,
-    PodcastDialogueRequest, TrendToScriptRequest, TelegramBotRequest
+    PodcastDialogueRequest, TrendToScriptRequest, TelegramBotRequest,
+    GeminiPoolKeysRequest, GeminiTestKeysRequest, GeminiKeyRemoveRequest
 )
+from app.gemini_pool import gemini_pool, parse_raw_keys
 from app.tts_engine import TTSEngine
 from app.scene_director import SceneDirector
 from app.editor_engine import AIShortsRenderer
@@ -947,8 +949,48 @@ async def control_telegram_bot(
         return {"status": "online" if TelegramStudioBot.is_running() else "idle"}
 
 
+@app.get("/api/gemini/pool-status")
+async def get_gemini_pool_status():
+    """Returns the current status, health, and list of Gemini API keys in the rotation pool."""
+    return gemini_pool.get_status()
+
+
+@app.post("/api/gemini/pool-keys")
+async def update_gemini_pool_keys(payload: GeminiPoolKeysRequest):
+    """Sets or registers multiple Gemini API keys in the persistent pool."""
+    keys_input = payload.keys if payload.keys else payload.keys_text
+    parsed = gemini_pool.set_keys(keys_input, persist=payload.persist)
+    return {
+        "status": "success",
+        "keys_count": len(parsed),
+        "pool": gemini_pool.get_status()
+    }
+
+
+@app.post("/api/gemini/test-keys")
+async def test_gemini_keys(payload: GeminiTestKeysRequest):
+    """Tests specified keys (or all configured pool keys) with live latency and health verification."""
+    keys_input = payload.keys if payload.keys else payload.keys_text
+    test_results = await gemini_pool.test_all_keys(keys_input)
+    return {
+        "results": test_results,
+        "pool": gemini_pool.get_status()
+    }
+
+
+@app.post("/api/gemini/remove-key")
+async def remove_gemini_key(payload: GeminiKeyRemoveRequest):
+    """Removes a key from the persistent rotation pool."""
+    removed = gemini_pool.remove_key(payload.key)
+    return {
+        "removed": removed,
+        "pool": gemini_pool.get_status()
+    }
+
+
 # Mount built React frontend if dist exists
 if FRONTEND_DIST_DIR.exists():
     app.mount("/", StaticFiles(directory=str(FRONTEND_DIST_DIR), html=True), name="frontend")
+
 
 

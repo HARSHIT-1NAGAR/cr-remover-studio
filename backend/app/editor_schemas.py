@@ -157,3 +157,19 @@ class TelegramBotRequest(BaseModel):
     action: Literal["start", "stop", "status", "test_message"] = "status"
 
 
+class GeminiPoolKeysRequest(BaseModel):
+    keys: Optional[List[str]] = Field(default=None, description="List of Gemini API keys")
+    keys_text: Optional[str] = Field(default="", description="Multiline or comma-separated Gemini API keys")
+    persist: bool = Field(default=True, description="Save keys to storage/gemini_keys.json")
+
+
+class GeminiTestKeysRequest(BaseModel):
+    keys: Optional[List[str]] = Field(default=None, description="Specific keys to test (or all if omitted)")
+    keys_text: Optional[str] = Field(default="", description="Multiline or comma-separated keys to test")
+
+
+class GeminiKeyRemoveRequest(BaseModel):
+    key: str = Field(..., description="Key or masked key identifier to remove")
+
+
+

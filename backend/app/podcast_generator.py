@@ -1,7 +1,7 @@
 """
 2-Person Conversational Podcast & Dialogue Shorts Generator for CR Remover Studio.
 Generates compelling 2-speaker dialogues (Interviewer & Expert, Skeptic & Believer),
-synthesizes alternating neural voices, and compiles 9:16 split-screen videos.
+synthesizes alternating neural voices, and compiles 9:16 split-screen videos with GeminiKeyPool rotation.
 """
 
 from pathlib import Path
@@ -18,7 +18,7 @@ from app.broll_harvester import BRollHarvester
 from app.editor_schemas import WordTiming, AIShortsRenderRequest, SceneBlock
 from app.editor_engine import AIShortsRenderer
 from app.sfx_director import SFXDirector
-import google.generativeai as genai
+from app.gemini_pool import gemini_pool
 
 
 class PodcastShortsGenerator:
@@ -34,41 +34,25 @@ class PodcastShortsGenerator:
         """
         Generates structured 2-speaker conversation turns.
         """
-        api_key = gemini_api_key.strip() if gemini_api_key else os.getenv("GEMINI_API_KEY", "")
+        prompt = (
+            f"Create a high-energy 2-person podcast Shorts script about: {topic}\n"
+            f"Format: Host (interviewer asking provocative questions) & Guest (expert dropping shocking revelations).\n"
+            f"Duration: 30-45 seconds (4 to 6 total dialogue turns, fast pacing).\n\n"
+            f"Return JSON ONLY with this structure:\n"
+            f"{{\n"
+            f'  "title": "Shocking Podcast Hook Title",\n'
+            f'  "host_name": "Host",\n'
+            f'  "guest_name": "Expert",\n'
+            f'  "turns": [\n'
+            f'    {{"speaker": "host", "text": "Is it true that modern banks don\'t actually keep our money in vaults?"}},\n'
+            f'    {{"speaker": "guest", "text": "Almost none of it. Over 90% is immediately loaned out the second you deposit it."}},\n'
+            f'    {{"speaker": "host", "text": "So what happens if everyone tries to withdraw at the same time?"}},\n'
+            f'    {{"speaker": "guest", "text": "The entire system collapses in 48 hours. That\'s the secret nobody talks about."}}\n'
+            f'  ]\n'
+            f"}}"
+        )
 
-        if api_key:
-            try:
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                prompt = (
-                    f"Create a high-energy 2-person podcast Shorts script about: {topic}\n"
-                    f"Format: Host (interviewer asking provocative questions) & Guest (expert dropping shocking revelations).\n"
-                    f"Duration: 30-45 seconds (4 to 6 total dialogue turns, fast pacing).\n\n"
-                    f"Return JSON ONLY with this structure:\n"
-                    f"{{\n"
-                    f'  "title": "Shocking Podcast Hook Title",\n'
-                    f'  "host_name": "Host",\n'
-                    f'  "guest_name": "Expert",\n'
-                    f'  "turns": [\n'
-                    f'    {{"speaker": "host", "text": "Is it true that modern banks don\'t actually keep our money in vaults?"}},\n'
-                    f'    {{"speaker": "guest", "text": "Almost none of it. Over 90% is immediately loaned out the second you deposit it."}},\n'
-                    f'    {{"speaker": "host", "text": "So what happens if everyone tries to withdraw at the same time?"}},\n'
-                    f'    {{"speaker": "guest", "text": "The entire system collapses in 48 hours. That\'s the secret nobody talks about."}}\n'
-                    f'  ]\n'
-                    f"}}"
-                )
-                response = model.generate_content(prompt)
-                text = response.text.strip()
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0].strip()
-                elif "```" in text:
-                    text = text.split("```")[1].split("```")[0].strip()
-                return json.loads(text)
-            except Exception as e:
-                print(f"Gemini podcast dialogue fallback: {e}")
-
-        # Procedural fallback podcast conversation
-        return {
+        fallback = {
             "title": f"The Dark Truth Behind {topic.title()}",
             "host_name": "Host",
             "guest_name": "Expert",
@@ -79,6 +63,16 @@ class PodcastShortsGenerator:
                 {"speaker": "guest", "text": "The moment you realize this rule, you will never look at it the same way again."}
             ]
         }
+
+        try:
+            return gemini_pool.generate_json(
+                prompt=prompt,
+                api_keys=gemini_api_key,
+                fallback=fallback
+            )
+        except Exception as e:
+            print(f"[PodcastGenerator] Gemini podcast dialogue fallback: {e}")
+            return fallback
 
     @classmethod
     async def synthesize_dual_audio(

@@ -1,7 +1,7 @@
 """
 Autonomous Daily Trend Harvester & Live Viral News Scraper for CR Remover Studio.
 Fetches real-time trending topics from Google Trends RSS, Reddit Viral feeds, and Tech News,
-then automatically drafts high-retention 9:16 Shorts scripts.
+then automatically drafts high-retention 9:16 Shorts scripts with GeminiKeyPool.
 """
 
 from pathlib import Path
@@ -16,7 +16,7 @@ import urllib.parse
 from typing import List, Dict, Any, Optional
 
 from app.config import STORAGE_DIR, TEMP_DIR, READY_EXPORT_DIR
-import google.generativeai as genai
+from app.gemini_pool import gemini_pool
 
 
 CURATED_TREND_FEEDS = {
@@ -122,40 +122,24 @@ class TrendHarvester:
         """
         Converts a breaking trending headline into a fast-paced viral Shorts script with an infinite loop.
         """
-        api_key = gemini_api_key.strip() if gemini_api_key else os.getenv("GEMINI_API_KEY", "")
+        prompt = (
+            f"Create an urgent, high-retention viral YouTube Shorts script about this breaking news:\n"
+            f"Headline: {trend_title}\n"
+            f"Summary: {summary}\n\n"
+            f"Requirements:\n"
+            f"- 0-3s: Mind-blowing pattern interrupt hook.\n"
+            f"- 3-25s: Fast, shocking facts explaining what happened.\n"
+            f"- 25-30s: Ending that seamlessly loops back to the very first sentence.\n"
+            f"- Word count: 75-95 words (~30 seconds spoken).\n\n"
+            f"Return JSON ONLY:\n"
+            f"{{\n"
+            f'  "title": "Shocking 50-char viral title with emojis",\n'
+            f'  "hook_badge": "BREAKING NEWS",\n'
+            f'  "script": "The spoken voiceover text."\n'
+            f"}}"
+        )
 
-        if api_key:
-            try:
-                genai.configure(api_key=api_key)
-                model = genai.GenerativeModel("gemini-1.5-flash")
-                prompt = (
-                    f"Create an urgent, high-retention viral YouTube Shorts script about this breaking news:\n"
-                    f"Headline: {trend_title}\n"
-                    f"Summary: {summary}\n\n"
-                    f"Requirements:\n"
-                    f"- 0-3s: Mind-blowing pattern interrupt hook.\n"
-                    f"- 3-25s: Fast, shocking facts explaining what happened.\n"
-                    f"- 25-30s: Ending that seamlessly loops back to the very first sentence.\n"
-                    f"- Word count: 75-95 words (~30 seconds spoken).\n\n"
-                    f"Return JSON ONLY:\n"
-                    f"{{\n"
-                    f'  "title": "Shocking 50-char viral title with emojis",\n'
-                    f'  "hook_badge": "BREAKING NEWS",\n'
-                    f'  "script": "The spoken voiceover text."\n'
-                    f"}}"
-                )
-                response = model.generate_content(prompt)
-                text = response.text.strip()
-                if "```json" in text:
-                    text = text.split("```json")[1].split("```")[0].strip()
-                elif "```" in text:
-                    text = text.split("```")[1].split("```")[0].strip()
-                return json.loads(text)
-            except Exception as e:
-                print(f"Gemini trend script fallback: {e}")
-
-        # Procedural fallback trend script
-        return {
+        fallback = {
             "title": f"🚨 Breaking: {trend_title[:40]}!",
             "hook_badge": "BREAKING",
             "script": (
@@ -165,3 +149,13 @@ class TrendHarvester:
                 f"Subscribe right now so you don't miss the next major update, because..."
             )
         }
+
+        try:
+            return gemini_pool.generate_json(
+                prompt=prompt,
+                api_keys=gemini_api_key,
+                fallback=fallback
+            )
+        except Exception as e:
+            print(f"[TrendHarvester] Gemini trend script fallback: {e}")
+            return fallback

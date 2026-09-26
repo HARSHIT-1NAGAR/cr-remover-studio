@@ -143,7 +143,7 @@ const TOPIC_SUGGESTIONS = [
   'What Happens When A Black Hole Collides With Earth'
 ]
 
-export default function AIShortsStudio({ systemInfo }) {
+export default function AIShortsStudio({ systemInfo, onOpenKeyModal }) {
   // Master Step: 1 (Script & Voice) | 2 (Storyboard) | 3 (Style & BGM) | 4 (Render)
   const [currentStep, setCurrentStep] = useState(1)
 
@@ -247,6 +247,7 @@ export default function AIShortsStudio({ systemInfo }) {
       alert('Please enter a topic or concept prompt!')
       return
     }
+    const savedKeys = localStorage.getItem('cr_gemini_api_keys') || localStorage.getItem('cr_gemini_api_key') || ''
     setIsGeneratingScript(true)
     try {
       const res = await fetch('/api/ai-shorts/generate-script', {
@@ -255,7 +256,8 @@ export default function AIShortsStudio({ systemInfo }) {
         body: JSON.stringify({
           topic: t.trim(),
           tone,
-          target_duration: targetDuration
+          target_duration: targetDuration,
+          gemini_api_key: savedKeys
         })
       })
       if (!res.ok) throw new Error('Failed to generate script')
@@ -277,6 +279,7 @@ export default function AIShortsStudio({ systemInfo }) {
       return
     }
 
+    const savedKeys = localStorage.getItem('cr_gemini_api_keys') || localStorage.getItem('cr_gemini_api_key') || ''
     setIsGeneratingTTS(true)
     setIsParsingScenes(true)
 
@@ -306,7 +309,8 @@ export default function AIShortsStudio({ systemInfo }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          script_text: script.trim()
+          script_text: script.trim(),
+          gemini_api_key: savedKeys
         })
       })
 
@@ -623,16 +627,34 @@ export default function AIShortsStudio({ systemInfo }) {
                 <label style={{ fontSize: '0.76rem', fontWeight: 800, color: 'var(--accent-cyan)', letterSpacing: '0.5px' }}>
                   ✨ GENERATE VIRAL SCRIPT FROM TOPIC
                 </label>
-                <select
-                  value={tone}
-                  onChange={(e) => setTone(e.target.value)}
-                  style={{ width: 'auto', padding: '4px 8px', fontSize: '0.74rem', borderRadius: 'var(--radius-xs)' }}
-                >
-                  <option value="dramatic">Dramatic & Mystery</option>
-                  <option value="storytelling">Storytelling & Facts</option>
-                  <option value="motivational">Motivational</option>
-                  <option value="educational">Educational</option>
-                </select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={onOpenKeyModal}
+                    style={{
+                      background: 'rgba(6, 182, 212, 0.12)',
+                      border: '1px solid rgba(6, 182, 212, 0.3)',
+                      color: 'var(--accent-cyan)',
+                      padding: '3px 8px',
+                      borderRadius: 'var(--radius-xs)',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    🔑 Key Pool
+                  </button>
+                  <select
+                    value={tone}
+                    onChange={(e) => setTone(e.target.value)}
+                    style={{ width: 'auto', padding: '4px 8px', fontSize: '0.74rem', borderRadius: 'var(--radius-xs)' }}
+                  >
+                    <option value="dramatic">Dramatic & Mystery</option>
+                    <option value="storytelling">Storytelling & Facts</option>
+                    <option value="motivational">Motivational</option>
+                    <option value="educational">Educational</option>
+                  </select>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '8px' }}>

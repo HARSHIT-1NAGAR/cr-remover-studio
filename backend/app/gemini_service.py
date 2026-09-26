@@ -1,33 +1,17 @@
 """
 Gemini AI Service for CR Remover Studio.
-Generates viral Shorts search queries, high-CTR titles, hooks, SEO tags, and AI Viral Hook Scores using Google Gemini API.
+Generates viral Shorts search queries, high-CTR titles, hooks, SEO tags, and AI Viral Hook Scores using Google Gemini API with multi-key pool rotation.
 """
 
 from typing import Dict, Any, List, Optional
 import json
 import os
 import re
-import google.generativeai as genai
-
-
-
-DEFAULT_GEMINI_KEY = os.getenv("GEMINI_API_KEY", "")
+from app.gemini_pool import gemini_pool
 
 
 class GeminiTitleGenerator:
     """Uses Gemini to formulate viral search strategies, score retention, and generate viral metadata."""
-
-    @staticmethod
-    def get_model(api_key: str = ""):
-        """Initializes Gemini Flash-Lite model."""
-        key = api_key.strip() if api_key and api_key.strip() else DEFAULT_GEMINI_KEY
-        if not key:
-            return None
-        genai.configure(api_key=key)
-        try:
-            return genai.GenerativeModel("gemini-2.0-flash-lite")
-        except Exception:
-            return genai.GenerativeModel("gemini-1.5-flash")
 
     @classmethod
     def find_viral_shorts_queries(
@@ -53,10 +37,6 @@ class GeminiTitleGenerator:
         }
         
         try:
-            model = cls.get_model(api_key)
-            if not model:
-                return fallback
-
             lang_instruction = "All queries MUST strictly target ENGLISH language content with English text." if language_lock == "en" else ""
             recency_instruction = f"Target videos trending from: {recency.replace('_', ' ')}."
 
@@ -82,15 +62,11 @@ class GeminiTitleGenerator:
             Return ONLY JSON.
             """
 
-            res = model.generate_content(prompt)
-            text = res.text.strip()
-            if text.startswith("```"):
-                lines = text.split("\n")
-                if lines[0].startswith("```"): lines = lines[1:]
-                if lines and lines[-1].startswith("```"): lines = lines[:-1]
-                text = "\n".join(lines).strip()
-
-            data = json.loads(text)
+            data = gemini_pool.generate_json(
+                prompt=prompt,
+                api_keys=api_key,
+                fallback=fallback
+            )
             return {
                 "hashtags": data.get("hashtags") or fallback["hashtags"],
                 "queries": data.get("queries") or fallback["queries"]
@@ -118,10 +94,6 @@ class GeminiTitleGenerator:
         }
 
         try:
-            model = cls.get_model(api_key)
-            if not model:
-                return fallback
-
             prompt = f"""
             You are an expert YouTube Shorts Algorithm Analyst.
             Analyze this viral Short:
@@ -143,15 +115,11 @@ class GeminiTitleGenerator:
             Return ONLY JSON.
             """
 
-            res = model.generate_content(prompt)
-            text = res.text.strip()
-            if text.startswith("```"):
-                lines = text.split("\n")
-                if lines[0].startswith("```"): lines = lines[1:]
-                if lines and lines[-1].startswith("```"): lines = lines[:-1]
-                text = "\n".join(lines).strip()
-
-            data = json.loads(text)
+            data = gemini_pool.generate_json(
+                prompt=prompt,
+                api_keys=api_key,
+                fallback=fallback
+            )
             score = int(data.get("viral_score", fallback_score))
             score = max(75, min(99, score))
             return {
@@ -186,10 +154,6 @@ class GeminiTitleGenerator:
         }
 
         try:
-            model = cls.get_model(api_key)
-            if not model:
-                return fallback
-
             prompt = f"""
             You are the world's #1 viral YouTube Shorts creator.
             Given this video title: "{topic_or_original_title}"
@@ -209,16 +173,11 @@ class GeminiTitleGenerator:
             Return ONLY valid JSON. No markdown backticks, no other text.
             """
 
-            response = model.generate_content(prompt)
-            text = response.text.strip()
-            
-            if text.startswith("```"):
-                lines = text.split("\n")
-                if lines[0].startswith("```"): lines = lines[1:]
-                if lines and lines[-1].startswith("```"): lines = lines[:-1]
-                text = "\n".join(lines).strip()
-
-            data = json.loads(text)
+            data = gemini_pool.generate_json(
+                prompt=prompt,
+                api_keys=api_key,
+                fallback=fallback
+            )
             return data
         except Exception:
             return fallback

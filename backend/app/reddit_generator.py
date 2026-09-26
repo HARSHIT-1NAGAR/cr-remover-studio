@@ -13,24 +13,18 @@ import asyncio
 from typing import Dict, Any, List, Optional
 from PIL import Image, ImageDraw, ImageFont
 
-from app.config import STORAGE_DIR, TEMP_DIR, PROCESSED_DIR
+from app.config import STORAGE_DIR, TEMP_DIR, PROCESSED_DIR, HAS_NVENC
 from app.broll_harvester import BRollHarvester
+from app.tts_engine import TTSEngine
+from app.editor_schemas import AIShortsRenderRequest, SceneBlock, WordTiming
+from app.editor_engine import AIShortsRenderer
 import google.generativeai as genai
 
 FONTS_DIR = STORAGE_DIR / "assets" / "fonts"
 
 
-CURATED_SUBREDDITS = [
-    {"id": "r/AskReddit", "name": "r/AskReddit", "color": "#ff4500", "theme": "crazy_questions"},
-    {"id": "r/AmItheAsshole", "name": "r/AmItheAsshole", "color": "#10b981", "theme": "drama_conflict"},
-    {"id": "r/confession", "name": "r/confession", "color": "#8b5cf6", "theme": "secret_confessions"},
-    {"id": "r/Showerthoughts", "name": "r/Showerthoughts", "color": "#06b6d4", "theme": "mind_blowing"},
-    {"id": "r/nosleep", "name": "r/nosleep", "color": "#ef4444", "theme": "scary_horror"}
-]
-
-
 class RedditStoryGenerator:
-    """Generates viral Reddit stories and visual UI cards."""
+    """Generates viral Reddit stories, visual UI cards, and master 9:16 gameplay Shorts."""
 
     @classmethod
     async def generate_story(
@@ -51,11 +45,11 @@ class RedditStoryGenerator:
                 prompt = (
                     f"Create a viral Reddit Shorts story for {subreddit}.\n"
                     f"Custom Prompt: {custom_prompt or 'An unbelievable true story with unexpected twist'}\n"
-                    f"Target length: 120-160 words (around 35-45 seconds spoken).\n\n"
+                    f"Target length: 110-140 words (~35 seconds spoken).\n\n"
                     f"Return JSON ONLY with this format:\n"
                     f"{{\n"
                     f'  "subreddit": "{subreddit}",\n'
-                    f'  "title": "Compelling Reddit Post Title (e.g. My boss fired me for doing my job, so I took his entire company down...)",\n'
+                    f'  "title": "Compelling Reddit Post Title (e.g. My landlord tried to keep my $3,000 deposit, so I took his whole company down...)",\n'
                     f'  "author": "u/throwaway_{uuid.uuid4().hex[:4]}",\n'
                     f'  "upvotes": "28.4k",\n'
                     f'  "script": "The full first-person spoken story text without stage directions."\n'
@@ -179,3 +173,58 @@ class RedditStoryGenerator:
 
         img.save(str(output_path), format="PNG")
         return output_path
+
+    @classmethod
+    async def render_reddit_short(
+        cls,
+        story: Dict[str, Any],
+        voice_name: str = "en-US-GuyNeural",
+        bgm_track: str = "lofi_chill",
+        subtitle_style: str = "beast_green",
+        gameplay_broll: str = "minecraft_parkour"
+    ) -> Path:
+        """
+        Renders a full 9:16 Short of the Reddit story with authentic card overlay
+        over satisfying background gameplay.
+        """
+        # 1. Synthesize narration audio
+        tts_audio = TEMP_DIR / f"reddit_tts_{uuid.uuid4().hex[:6]}.mp3"
+        tts_res = await TTSEngine.generate_speech_with_timings(
+            text=story["script"],
+            voice_name=voice_name,
+            speed_factor=1.05,
+            output_file=tts_audio
+        )
+        total_dur = tts_res.get("duration", 30.0)
+        word_timings = [WordTiming(**w) for w in tts_res.get("word_timings", [])]
+
+        # 2. Get gameplay background clip
+        bg_clip = await BRollHarvester.match_broll_for_keywords(["gameplay", "runner"], duration=total_dur, preferred_category=gameplay_broll)
+
+        # 3. Create Scene
+        scene = SceneBlock(
+            id="reddit_sc_main",
+            scene_index=0,
+            narration_text=story["script"],
+            duration_seconds=total_dur,
+            visual_keywords=["gameplay", "satisfying"],
+            video_source_path=str(bg_clip),
+            camera_effect="slow_zoom_in"
+        )
+
+        job_id = f"reddit_{uuid.uuid4().hex[:6]}"
+        render_req = AIShortsRenderRequest(
+            project_id=job_id,
+            title=f"Reddit_{story.get('subreddit', 'AskReddit')}_{job_id[:4]}",
+            scenes=[scene],
+            voice_audio_path=str(tts_audio),
+            word_timings=word_timings,
+            subtitle_style=subtitle_style,
+            bgm_track=bgm_track,
+            bgm_volume=0.15,
+            progress_bar=True,
+            anti_copyright_shield=True,
+            use_gpu=HAS_NVENC
+        )
+
+        return await AIShortsRenderer.render_shorts(render_req)

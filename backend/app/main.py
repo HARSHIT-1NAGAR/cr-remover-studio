@@ -869,11 +869,69 @@ async def synthesize_podcast_audio(payload: PodcastDialogueRequest):
     return {"dialogue": dialogue, "audio": audio_res}
 
 
+@app.post("/api/podcast/render-short")
+async def render_podcast_short_endpoint(payload: PodcastDialogueRequest):
+    """Generates and fully renders a 2-person podcast split-screen Short."""
+    dialogue = await PodcastShortsGenerator.generate_dialogue(
+        topic=payload.topic,
+        style=payload.style,
+        gemini_api_key=payload.gemini_api_key
+    )
+    out_video = await PodcastShortsGenerator.render_split_screen_short(
+        dialogue=dialogue,
+        host_voice=payload.host_voice,
+        guest_voice=payload.guest_voice
+    )
+    return {
+        "status": "completed",
+        "video_url": f"/api/media/processed/{out_video.name}",
+        "filename": out_video.name,
+        "title": dialogue.get("title", "Podcast Short")
+    }
+
+
+@app.post("/api/reddit/render-short")
+async def render_reddit_short_endpoint(payload: RedditStoryRequest):
+    """Generates and fully renders a viral Reddit drama story Short over gameplay."""
+    story = await RedditStoryGenerator.generate_story(
+        subreddit=payload.subreddit,
+        custom_prompt=payload.custom_prompt,
+        gemini_api_key=payload.gemini_api_key
+    )
+    out_video = await RedditStoryGenerator.render_reddit_short(
+        story=story,
+        voice_name="en-US-GuyNeural",
+        gameplay_broll="minecraft_parkour"
+    )
+    return {
+        "status": "completed",
+        "video_url": f"/api/media/processed/{out_video.name}",
+        "filename": out_video.name,
+        "title": story.get("title", "Reddit Story")
+    }
+
+
+@app.post("/api/broll/upload")
+async def upload_custom_broll(file: UploadFile = File(...)):
+    """Uploads a custom video clip directly into the Stock B-Roll vault."""
+    from app.broll_harvester import BROLL_DIR
+    clean_name = file.filename.replace(" ", "_")
+    dest_path = BROLL_DIR / f"custom_{clean_name}"
+    with open(dest_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {
+        "status": "saved",
+        "filename": dest_path.name,
+        "video_url": f"/api/media/assets/broll/{dest_path.name}"
+    }
+
+
 @app.post("/api/telegram/control")
 async def control_telegram_bot(
     payload: TelegramBotRequest,
     background_tasks: BackgroundTasks
 ):
+
     """Starts, stops, or sends test message through Telegram Remote Control Bot."""
     if payload.action == "test_message":
         await TelegramStudioBot.send_message(

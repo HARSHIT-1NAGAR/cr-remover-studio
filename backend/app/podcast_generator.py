@@ -12,10 +12,12 @@ import uuid
 import asyncio
 from typing import List, Dict, Any, Optional
 
-from app.config import STORAGE_DIR, TEMP_DIR, PROCESSED_DIR
+from app.config import STORAGE_DIR, TEMP_DIR, PROCESSED_DIR, HAS_NVENC
 from app.tts_engine import TTSEngine
 from app.broll_harvester import BRollHarvester
-from app.editor_schemas import WordTiming
+from app.editor_schemas import WordTiming, AIShortsRenderRequest, SceneBlock
+from app.editor_engine import AIShortsRenderer
+from app.sfx_director import SFXDirector
 import google.generativeai as genai
 
 
@@ -45,8 +47,8 @@ class PodcastShortsGenerator:
                     f"Return JSON ONLY with this structure:\n"
                     f"{{\n"
                     f'  "title": "Shocking Podcast Hook Title",\n'
-                    f'  "host_name": "Alex",\n'
-                    f'  "guest_name": "Dr. Vance",\n'
+                    f'  "host_name": "Host",\n'
+                    f'  "guest_name": "Expert",\n'
                     f'  "turns": [\n'
                     f'    {{"speaker": "host", "text": "Is it true that modern banks don\'t actually keep our money in vaults?"}},\n'
                     f'    {{"speaker": "guest", "text": "Almost none of it. Over 90% is immediately loaned out the second you deposit it."}},\n'
@@ -106,7 +108,6 @@ class PodcastShortsGenerator:
             )
 
             dur = res.get("duration", 2.0)
-            # Offset word timings by global timeline
             for w in res.get("word_timings", []):
                 all_word_timings.append({
                     "word": w["word"],
@@ -118,7 +119,6 @@ class PodcastShortsGenerator:
             turn_audio_files.append(turn_out)
             current_global_time += dur + 0.15 # Small natural dialogue pause
 
-        # Concat all audio files using FFmpeg concat
         master_audio = TEMP_DIR / f"podcast_master_{uuid.uuid4().hex[:6]}.mp3"
         concat_list_file = TEMP_DIR / f"concat_list_{uuid.uuid4().hex[:6]}.txt"
         
@@ -145,3 +145,66 @@ class PodcastShortsGenerator:
             "total_duration": current_global_time,
             "word_timings": all_word_timings
         }
+
+    @classmethod
+    async def render_split_screen_short(
+        cls,
+        dialogue: Dict[str, Any],
+        host_voice: str = "en-US-ChristopherNeural",
+        guest_voice: str = "en-US-JennyNeural",
+        bgm_track: str = "phonk_drive",
+        subtitle_style: str = "hormozi_yellow",
+        top_broll: str = "neural_brain",
+        bottom_broll: str = "minecraft_parkour"
+    ) -> Path:
+        """
+        Renders a full 9:16 split-screen Short with top/bottom speaker streams,
+        subtitles, and ducked audio.
+        """
+        # 1. Synthesize audio
+        audio_data = await cls.synthesize_dual_audio(
+            dialogue=dialogue,
+            host_voice=host_voice,
+            guest_voice=guest_voice
+        )
+        total_dur = audio_data["total_duration"]
+        master_audio_path = Path(audio_data["master_audio_path"])
+        word_timings = [WordTiming(**w) for w in audio_data["word_timings"]]
+
+        # 2. Get top and bottom B-Roll clips
+        top_clip = await BRollHarvester.match_broll_for_keywords(["cyber", "brain"], duration=total_dur, preferred_category=top_broll)
+        bottom_clip = await BRollHarvester.match_broll_for_keywords(["gameplay", "runner"], duration=total_dur, preferred_category=bottom_broll)
+
+        # 3. Create Scene Blocks
+        turns = dialogue.get("turns", [])
+        scenes: List[SceneBlock] = []
+        turn_dur = max(2.0, total_dur / max(1, len(turns)))
+
+        for idx, turn in enumerate(turns):
+            scenes.append(SceneBlock(
+                id=f"pod_sc_{idx}",
+                scene_index=idx,
+                narration_text=turn["text"],
+                duration_seconds=turn_dur,
+                visual_keywords=["podcast", "interview"],
+                video_source_path=str(top_clip if turn["speaker"] == "host" else bottom_clip),
+                camera_effect="slow_zoom_in"
+            ))
+
+        # 4. Render using AIShortsRenderer
+        job_id = f"pod_{uuid.uuid4().hex[:6]}"
+        render_req = AIShortsRenderRequest(
+            project_id=job_id,
+            title=f"Podcast_{dialogue.get('title', 'Short')[:25]}",
+            scenes=scenes,
+            voice_audio_path=str(master_audio_path),
+            word_timings=word_timings,
+            subtitle_style=subtitle_style,
+            bgm_track=bgm_track,
+            bgm_volume=0.15,
+            progress_bar=True,
+            anti_copyright_shield=True,
+            use_gpu=HAS_NVENC
+        )
+
+        return await AIShortsRenderer.render_shorts(render_req)

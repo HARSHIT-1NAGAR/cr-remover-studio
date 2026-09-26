@@ -4,7 +4,8 @@ import {
   Sparkles, Play, Pause, Download, Copy, Check, ChevronRight,
   Layers, Volume2, Music, Type, Zap, RefreshCw, AlertCircle, Eye,
   Clock, Hash, Share2, Award, ArrowUpRight, TrendingUp, Mic,
-  Radio, Send, ShieldCheck, Smartphone, Users
+  Radio, Send, ShieldCheck, Smartphone, Users, Sliders, VolumeX,
+  Plus, Trash2, Edit3, CheckCircle2, FileText, UploadCloud
 } from 'lucide-react'
 
 export default function AutoPilotStudio({ systemInfo }) {
@@ -22,6 +23,11 @@ export default function AutoPilotStudio({ systemInfo }) {
   const [geminiApiKey, setGeminiApiKey] = useState('')
   const [customTopics, setCustomTopics] = useState('')
   
+  // Live Audio Auditioning
+  const [playingBgm, setPlayingBgm] = useState(null)
+  const [bgmAudioElement, setBgmAudioElement] = useState(null)
+  const [isPlayingVoice, setIsPlayingVoice] = useState(false)
+  
   // Execution & Progress State
   const [isRenderingBatch, setIsRenderingBatch] = useState(false)
   const [batchProgress, setBatchProgress] = useState(0)
@@ -36,6 +42,8 @@ export default function AutoPilotStudio({ systemInfo }) {
   const [selectedTrend, setSelectedTrend] = useState(null)
   const [trendScript, setTrendScript] = useState(null)
   const [isGeneratingTrendScript, setIsGeneratingTrendScript] = useState(false)
+  const [isRenderingTrendShort, setIsRenderingTrendShort] = useState(false)
+  const [renderedTrendVideo, setRenderedTrendVideo] = useState(null)
 
   // 2-Person Podcast State
   const [podcastTopic, setPodcastTopic] = useState('Why 90% of millionaires invest in real estate')
@@ -44,6 +52,8 @@ export default function AutoPilotStudio({ systemInfo }) {
   const [podcastDialogue, setPodcastDialogue] = useState(null)
   const [isGeneratingPodcast, setIsGeneratingPodcast] = useState(false)
   const [podcastAudioRes, setPodcastAudioRes] = useState(null)
+  const [isRenderingPodcastVideo, setIsRenderingPodcastVideo] = useState(false)
+  const [renderedPodcastVideo, setRenderedPodcastVideo] = useState(null)
 
   // Telegram Bot State
   const [telegramToken, setTelegramToken] = useState('')
@@ -56,18 +66,22 @@ export default function AutoPilotStudio({ systemInfo }) {
   const [brollSearchQuery, setBrollSearchQuery] = useState('')
   const [brollSearchResults, setBrollSearchResults] = useState([])
   const [isSearchingBroll, setIsSearchingBroll] = useState(false)
+  const [isUploadingBroll, setIsUploadingBroll] = useState(false)
   
   // Reddit Maker State
   const [redditSub, setRedditSub] = useState('r/AskReddit')
   const [redditPrompt, setRedditPrompt] = useState('')
   const [redditStory, setRedditStory] = useState(null)
   const [isGeneratingReddit, setIsGeneratingReddit] = useState(false)
+  const [isRenderingRedditVideo, setIsRenderingRedditVideo] = useState(false)
+  const [renderedRedditVideo, setRenderedRedditVideo] = useState(null)
   
   // Thumbnail Studio State
   const [thumbVideoPath, setThumbVideoPath] = useState('')
   const [thumbHookText, setThumbHookText] = useState('UNBELIEVABLE TRUTH')
   const [thumbBadge, setThumbBadge] = useState('MUST WATCH')
   const [thumbStyle, setThumbStyle] = useState('viral_yellow')
+  const [thumbTimestamp, setThumbTimestamp] = useState(1.2)
   const [generatedCoverUrl, setGeneratedCoverUrl] = useState(null)
   const [isGeneratingThumb, setIsGeneratingThumb] = useState(false)
 
@@ -76,34 +90,23 @@ export default function AutoPilotStudio({ systemInfo }) {
 
   // Load Initial Data
   useEffect(() => {
-    // Load Niches
     fetch('/api/autopilot/niches')
       .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) setNiches(data)
-      })
+      .then(data => { if (Array.isArray(data)) setNiches(data) })
       .catch(console.error)
 
-    // Load Voices
     fetch('/api/ai-shorts/voices')
       .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) setVoices(data)
-      })
+      .then(data => { if (Array.isArray(data)) setVoices(data) })
       .catch(console.error)
 
-    // Load B-Roll Categories
     fetch('/api/broll/categories')
       .then(r => r.json())
-      .then(data => {
-        if (Array.isArray(data)) setBrollCategories(data)
-      })
+      .then(data => { if (Array.isArray(data)) setBrollCategories(data) })
       .catch(console.error)
 
-    // Load Live Trends
     fetchTrends()
 
-    // Load Saved Telegram Config
     const savedToken = localStorage.getItem('cr_tg_token')
     const savedChat = localStorage.getItem('cr_tg_chat')
     if (savedToken) setTelegramToken(savedToken)
@@ -120,6 +123,46 @@ export default function AutoPilotStudio({ systemInfo }) {
       console.error(e)
     } finally {
       setIsLoadingTrends(false)
+    }
+  }
+
+  // Audition BGM
+  const togglePlayBgm = (bgmId) => {
+    if (playingBgm === bgmId) {
+      bgmAudioElement?.pause()
+      setPlayingBgm(null)
+      return
+    }
+    bgmAudioElement?.pause()
+    const audio = new Audio(`/api/media/assets/bgm/${bgmId}.wav`)
+    audio.volume = 0.4
+    audio.play().catch(console.error)
+    audio.onended = () => setPlayingBgm(null)
+    setBgmAudioElement(audio)
+    setPlayingBgm(bgmId)
+  }
+
+  // Audition Neural Voice
+  const handleAuditionVoice = async (voiceId) => {
+    setIsPlayingVoice(true)
+    try {
+      const res = await fetch('/api/ai-shorts/generate-tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: "Welcome to CR Remover Studio. High retention Shorts are ready to publish.",
+          voice_name: voiceId
+        })
+      })
+      const data = await res.json()
+      if (data.audio_url) {
+        const audio = new Audio(data.audio_url)
+        audio.play().catch(console.error)
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setIsPlayingVoice(false)
     }
   }
 
@@ -193,6 +236,7 @@ export default function AutoPilotStudio({ systemInfo }) {
   const handleTrendToScript = async (trend) => {
     setSelectedTrend(trend)
     setIsGeneratingTrendScript(true)
+    setRenderedTrendVideo(null)
     try {
       const res = await fetch('/api/trends/to-script', {
         method: 'POST',
@@ -212,9 +256,39 @@ export default function AutoPilotStudio({ systemInfo }) {
     }
   }
 
+  // Direct 1-Click Render for Trend Short
+  const handleRenderTrendShortDirect = async () => {
+    if (!trendScript) return
+    setIsRenderingTrendShort(true)
+    try {
+      const res = await fetch('/api/autopilot/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          niche_id: 'crazy_facts',
+          count: 1,
+          custom_topics: [trendScript.title],
+          voice_name: selectedVoice,
+          bgm_track: selectedBgm,
+          subtitle_style: selectedSubStyle,
+          gemini_api_key: geminiApiKey
+        })
+      })
+      const data = await res.json()
+      setActiveBatchId(data.batch_id)
+      setIsRenderingBatch(true)
+      setActiveTab('batch_factory')
+    } catch (e) {
+      alert(`Render error: ${e.message}`)
+    } finally {
+      setIsRenderingTrendShort(false)
+    }
+  }
+
   // Generate 2-Person Podcast Dialogue
   const handleGeneratePodcast = async () => {
     setIsGeneratingPodcast(true)
+    setRenderedPodcastVideo(null)
     try {
       const res = await fetch('/api/podcast/synthesize', {
         method: 'POST',
@@ -233,6 +307,51 @@ export default function AutoPilotStudio({ systemInfo }) {
       alert(`Podcast error: ${e.message}`)
     } finally {
       setIsGeneratingPodcast(false)
+    }
+  }
+
+  // Direct Render for 2-Person Podcast Short
+  const handleRenderPodcastShort = async () => {
+    setIsRenderingPodcastVideo(true)
+    try {
+      const res = await fetch('/api/podcast/render-short', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          topic: podcastTopic,
+          host_voice: podcastHostVoice,
+          guest_voice: podcastGuestVoice,
+          gemini_api_key: geminiApiKey
+        })
+      })
+      const data = await res.json()
+      setRenderedPodcastVideo(data)
+    } catch (e) {
+      alert(`Podcast rendering error: ${e.message}`)
+    } finally {
+      setIsRenderingPodcastVideo(false)
+    }
+  }
+
+  // Direct Render for Reddit Story Short
+  const handleRenderRedditShort = async () => {
+    setIsRenderingRedditVideo(true)
+    try {
+      const res = await fetch('/api/reddit/render-short', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subreddit: redditSub,
+          custom_prompt: redditPrompt,
+          gemini_api_key: geminiApiKey
+        })
+      })
+      const data = await res.json()
+      setRenderedRedditVideo(data)
+    } catch (e) {
+      alert(`Reddit rendering error: ${e.message}`)
+    } finally {
+      setIsRenderingRedditVideo(false)
     }
   }
 
@@ -288,9 +407,32 @@ export default function AutoPilotStudio({ systemInfo }) {
     }
   }
 
+  // Custom B-Roll Upload
+  const handleUploadBrollFile = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    setIsUploadingBroll(true)
+    const fd = new FormData()
+    fd.append('file', file)
+    try {
+      const res = await fetch('/api/broll/upload', { method: 'POST', body: fd })
+      const data = await res.json()
+      // Refresh categories
+      const catRes = await fetch('/api/broll/categories')
+      const catData = await catRes.json()
+      if (Array.isArray(catData)) setBrollCategories(catData)
+      alert(`✅ Custom video "${file.name}" uploaded to B-Roll vault!`)
+    } catch (err) {
+      alert(`Upload error: ${err.message}`)
+    } finally {
+      setIsUploadingBroll(false)
+    }
+  }
+
   // Generate Reddit Story
   const handleGenerateReddit = async () => {
     setIsGeneratingReddit(true)
+    setRenderedRedditVideo(null)
     try {
       const res = await fetch('/api/reddit/generate-story', {
         method: 'POST',
@@ -312,20 +454,19 @@ export default function AutoPilotStudio({ systemInfo }) {
 
   // Generate Thumbnail
   const handleGenerateThumbnail = async () => {
-    if (!thumbVideoPath) {
-      alert('Please specify a video path or choose from rendered videos!')
-      return
-    }
+    // If no video path entered, pick first available broll clip
+    const targetVideo = thumbVideoPath || (brollCategories[0]?.video_url ? brollCategories[0].id + '.mp4' : 'minecraft_parkour.mp4')
     setIsGeneratingThumb(true)
     try {
       const res = await fetch('/api/thumbnail/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          video_path: thumbVideoPath,
+          video_path: targetVideo,
           hook_text: thumbHookText,
           badge_text: thumbBadge,
-          style_key: thumbStyle
+          style_key: thumbStyle,
+          timestamp_sec: thumbTimestamp
         })
       })
       const data = await res.json()
@@ -497,11 +638,20 @@ export default function AutoPilotStudio({ systemInfo }) {
               {/* Advanced Customization Rows */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
                 
-                {/* Voice Selection */}
+                {/* Voice Selection with Live Audition */}
                 <div>
-                  <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-                    🎙️ Neural Voice
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                      🎙️ Neural Voice
+                    </label>
+                    <button
+                      onClick={() => handleAuditionVoice(selectedVoice)}
+                      disabled={isPlayingVoice}
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px', padding: 0 }}
+                    >
+                      <Volume2 size={10} /> {isPlayingVoice ? 'Speaking...' : 'Audition'}
+                    </button>
+                  </div>
                   <select
                     value={selectedVoice}
                     onChange={e => setSelectedVoice(e.target.value)}
@@ -530,11 +680,20 @@ export default function AutoPilotStudio({ systemInfo }) {
                   </select>
                 </div>
 
-                {/* BGM Track */}
+                {/* BGM Track with Live Music Preview */}
                 <div>
-                  <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-                    🎵 Background Music
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>
+                      🎵 Background Music
+                    </label>
+                    <button
+                      onClick={() => togglePlayBgm(selectedBgm)}
+                      style={{ background: 'none', border: 'none', color: playingBgm === selectedBgm ? '#22c55e' : 'var(--accent)', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px', padding: 0 }}
+                    >
+                      {playingBgm === selectedBgm ? <Pause size={10} /> : <Play size={10} />}
+                      {playingBgm === selectedBgm ? 'Stop' : 'Preview'}
+                    </button>
+                  </div>
                   <select
                     value={selectedBgm}
                     onChange={e => setSelectedBgm(e.target.value)}
@@ -827,7 +986,7 @@ export default function AutoPilotStudio({ systemInfo }) {
             </div>
           </div>
 
-          {/* Right: Auto-Generated Trend Script & 1-Click Render */}
+          {/* Right: Auto-Generated Trend Script & Direct 1-Click Render */}
           <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
             <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>
               Live Viral Script & Infinite Loop Stager
@@ -859,15 +1018,13 @@ export default function AutoPilotStudio({ systemInfo }) {
                 </div>
 
                 <button
-                  onClick={() => {
-                    setCustomTopics(selectedTrend?.title || '')
-                    setActiveTab('batch_factory')
-                  }}
+                  onClick={handleRenderTrendShortDirect}
+                  disabled={isRenderingTrendShort}
                   className="btn-primary"
-                  style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: 'var(--text-xs)', fontWeight: 700 }}
+                  style={{ padding: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', fontSize: 'var(--text-sm)', fontWeight: 700 }}
                 >
-                  <Rocket size={14} />
-                  <span>Send to 1-Click Auto-Pilot Factory & Render</span>
+                  <Rocket size={16} />
+                  <span>⚡ Render 1-Click Viral Trend Short (GPU)</span>
                 </button>
               </div>
             ) : (
@@ -938,16 +1095,41 @@ export default function AutoPilotStudio({ systemInfo }) {
               style={{ padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontSize: 'var(--text-xs)', fontWeight: 700 }}
             >
               {isGeneratingPodcast ? <RefreshCw size={14} className="spin" /> : <Mic size={14} />}
-              <span>{isGeneratingPodcast ? 'Synthesizing Dual-Voice Podcast...' : 'Generate 2-Speaker Dialogue & Audio'}</span>
+              <span>{isGeneratingPodcast ? 'Synthesizing Dual-Voice Dialogue...' : 'Generate 2-Speaker Script & Audio'}</span>
             </button>
           </div>
 
           <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>
-              Alternating Speaker Dialogue & Audio Preview
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>
+                Alternating Dialogue & Render Output
+              </h3>
+              {podcastDialogue && (
+                <button
+                  onClick={handleRenderPodcastShort}
+                  disabled={isRenderingPodcastVideo}
+                  style={{ padding: '6px 12px', background: '#22c55e', color: '#000', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  {isRenderingPodcastVideo ? <RefreshCw size={12} className="spin" /> : <Rocket size={12} />}
+                  <span>{isRenderingPodcastVideo ? 'Rendering Split-Screen Short...' : 'Render Split-Screen Video'}</span>
+                </button>
+              )}
+            </div>
 
-            {podcastDialogue ? (
+            {renderedPodcastVideo ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <div style={{ width: '100%', height: '240px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: '#000' }}>
+                  <video src={renderedPodcastVideo.video_url} controls style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                <a
+                  href={renderedPodcastVideo.video_url}
+                  download={renderedPodcastVideo.filename}
+                  style={{ padding: '8px 14px', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-sm)', textDecoration: 'none', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                >
+                  <Download size={14} /> Download Podcast Short MP4
+                </a>
+              </div>
+            ) : podcastDialogue ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 {podcastAudioRes?.master_audio_url && (
                   <div style={{ padding: 'var(--space-2)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-sm)' }}>
@@ -955,7 +1137,7 @@ export default function AutoPilotStudio({ systemInfo }) {
                   </div>
                 )}
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '400px', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '350px', overflowY: 'auto' }}>
                   {podcastDialogue.turns?.map((turn, idx) => (
                     <div
                       key={idx}
@@ -977,7 +1159,7 @@ export default function AutoPilotStudio({ systemInfo }) {
               </div>
             ) : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-xs)' }}>
-                Click "Generate 2-Speaker Dialogue" to create a dynamic podcast Short.
+                Click "Generate 2-Speaker Script & Audio" to create a dynamic podcast Short.
               </div>
             )}
           </div>
@@ -1157,7 +1339,7 @@ export default function AutoPilotStudio({ systemInfo }) {
               </p>
             </div>
 
-            <div style={{ display: 'flex', gap: 'var(--space-2)', minWidth: '320px' }}>
+            <div style={{ display: 'flex', gap: 'var(--space-2)', minWidth: '320px', flexWrap: 'wrap' }}>
               <input
                 type="text"
                 value={brollSearchQuery}
@@ -1173,6 +1355,12 @@ export default function AutoPilotStudio({ systemInfo }) {
               >
                 {isSearchingBroll ? 'Searching…' : 'Search'}
               </button>
+
+              <label style={{ padding: '8px 14px', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', color: '#fff', fontSize: 'var(--text-xs)', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <UploadCloud size={14} />
+                <span>{isUploadingBroll ? 'Uploading...' : 'Upload Clip'}</span>
+                <input type="file" accept="video/mp4,video/webm" onChange={handleUploadBrollFile} style={{ display: 'none' }} />
+              </label>
             </div>
           </div>
 
@@ -1271,11 +1459,36 @@ export default function AutoPilotStudio({ systemInfo }) {
           </div>
 
           <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>
-              Live Reddit UI Card & Narration Script
-            </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: 0 }}>
+                Live Reddit UI Card & Rendered Video
+              </h3>
+              {redditStory && (
+                <button
+                  onClick={handleRenderRedditShort}
+                  disabled={isRenderingRedditVideo}
+                  style={{ padding: '6px 12px', background: '#22c55e', color: '#000', border: 'none', borderRadius: '4px', fontSize: '11px', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                >
+                  {isRenderingRedditVideo ? <RefreshCw size={12} className="spin" /> : <Rocket size={12} />}
+                  <span>{isRenderingRedditVideo ? 'Rendering Video...' : 'Render Reddit Short'}</span>
+                </button>
+              )}
+            </div>
 
-            {redditStory ? (
+            {renderedRedditVideo ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                <div style={{ width: '100%', height: '240px', borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: '#000' }}>
+                  <video src={renderedRedditVideo.video_url} controls style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </div>
+                <a
+                  href={renderedRedditVideo.video_url}
+                  download={renderedRedditVideo.filename}
+                  style={{ padding: '8px 14px', background: 'var(--accent)', color: '#fff', borderRadius: 'var(--radius-sm)', textDecoration: 'none', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                >
+                  <Download size={14} /> Download Reddit Short MP4
+                </a>
+              </div>
+            ) : redditStory ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                 {redditStory.card_url && (
                   <div style={{ width: '100%', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border)' }}>
@@ -1336,20 +1549,37 @@ export default function AutoPilotStudio({ systemInfo }) {
               />
             </div>
 
-            <div>
-              <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-                Color & 3D Typography Preset
-              </label>
-              <select
-                value={thumbStyle}
-                onChange={e => setThumbStyle(e.target.value)}
-                style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
-              >
-                <option value="viral_yellow">Viral Yellow (#FFE600 & 3D Drop Shadow)</option>
-                <option value="mrbeast_impact">MrBeast Impact (Bold White & Blue Badge)</option>
-                <option value="neon_cyber">Neon Cyan & Purple Cyber Glow</option>
-                <option value="dark_mystery">Dark Mystery & Crimson Red</option>
-              </select>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-2)' }}>
+              <div>
+                <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  Color & Style Preset
+                </label>
+                <select
+                  value={thumbStyle}
+                  onChange={e => setThumbStyle(e.target.value)}
+                  style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
+                >
+                  <option value="viral_yellow">Viral Yellow (#FFE600)</option>
+                  <option value="mrbeast_impact">MrBeast White & Blue</option>
+                  <option value="neon_cyber">Neon Cyan & Purple</option>
+                  <option value="dark_mystery">Crimson Mystery</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
+                  Frame Timestamp: {thumbTimestamp}s
+                </label>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="15.0"
+                  step="0.5"
+                  value={thumbTimestamp}
+                  onChange={e => setThumbTimestamp(parseFloat(e.target.value))}
+                  style={{ width: '100%', marginTop: '6px' }}
+                />
+              </div>
             </div>
 
             <button
@@ -1363,29 +1593,59 @@ export default function AutoPilotStudio({ systemInfo }) {
             </button>
           </div>
 
+          {/* Right: Live Interactive Thumbnail Mockup */}
           <div className="card" style={{ padding: 'var(--space-4)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '420px' }}>
-            {generatedCoverUrl ? (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-3)' }}>
-                <div style={{ width: '220px', height: '390px', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '2px solid var(--accent)', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
-                  <img src={generatedCoverUrl} alt="Generated Cover" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </div>
-                <a
-                  href={generatedCoverUrl}
-                  download="Short_Cover_916.jpg"
-                  style={{
-                    padding: '8px 16px', background: 'var(--accent)', color: '#fff',
-                    borderRadius: 'var(--radius-sm)', textDecoration: 'none', fontSize: 'var(--text-xs)',
-                    fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px'
-                  }}
-                >
-                  <Download size={14} /> Download High-Res Cover
-                </a>
-              </div>
-            ) : (
-              <div style={{ color: 'var(--text-muted)', fontSize: 'var(--text-xs)', textAlign: 'center' }}>
-                <ImageIcon size={36} strokeWidth={1.5} color="var(--border)" style={{ marginBottom: '8px' }} />
-                <p>Generated 9:16 Cover preview will appear here.</p>
-              </div>
+            <div style={{
+              width: '210px', height: '370px', borderRadius: 'var(--radius-md)', overflow: 'hidden',
+              position: 'relative', background: 'linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%)',
+              border: '2px solid var(--accent)', boxShadow: '0 12px 36px rgba(0,0,0,0.6)',
+              display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '16px', boxSizing: 'border-box'
+            }}>
+              {/* Background preview image if generated */}
+              {generatedCoverUrl ? (
+                <img src={generatedCoverUrl} alt="Cover" style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <>
+                  {/* Real-time pill badge */}
+                  {thumbBadge && (
+                    <div style={{
+                      background: thumbStyle === 'mrbeast_impact' ? '#3b82f6' : thumbStyle === 'neon_cyber' ? '#a855f7' : '#ef4444',
+                      color: '#fff', fontSize: '10px', fontWeight: 800, padding: '3px 10px', borderRadius: '12px',
+                      marginBottom: '12px', zIndex: 2, boxShadow: '0 4px 12px rgba(0,0,0,0.4)', textTransform: 'uppercase'
+                    }}>
+                      🔥 {thumbBadge}
+                    </div>
+                  )}
+
+                  {/* Real-time 3D Typography */}
+                  <div style={{
+                    fontSize: '18px', fontWeight: 900, textAlign: 'center', textTransform: 'uppercase',
+                    color: thumbStyle === 'viral_yellow' ? '#FFE600' : thumbStyle === 'neon_cyber' ? '#06b6d4' : thumbStyle === 'dark_mystery' ? '#f87171' : '#ffffff',
+                    textShadow: '0 4px 10px #000, 0 0 2px #000, 2px 2px 0 #000, -2px -2px 0 #000',
+                    lineHeight: 1.15, zIndex: 2, letterSpacing: '-0.02em'
+                  }}>
+                    {thumbHookText || 'YOUR VIRAL HOOK HERE'}
+                  </div>
+
+                  <span style={{ position: 'absolute', bottom: '12px', fontSize: '9px', color: 'rgba(255,255,255,0.5)', zIndex: 2 }}>
+                    Live Preview
+                  </span>
+                </>
+              )}
+            </div>
+
+            {generatedCoverUrl && (
+              <a
+                href={generatedCoverUrl}
+                download="Short_Cover_916.jpg"
+                style={{
+                  marginTop: 'var(--space-3)', padding: '8px 16px', background: 'var(--accent)', color: '#fff',
+                  borderRadius: 'var(--radius-sm)', textDecoration: 'none', fontSize: 'var(--text-xs)',
+                  fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px'
+                }}
+              >
+                <Download size={14} /> Download High-Res Cover (1080x1920)
+              </a>
             )}
           </div>
         </div>

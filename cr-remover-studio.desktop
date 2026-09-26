@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=CR Remover Studio
+Comment=Automated Video Transformation & Anti-Fingerprint Studio
+Exec=/home/harshit/Desktop/cr-remover/launch_app.sh
+Icon=/home/harshit/Desktop/cr-remover/cr_icon.png
+Terminal=false
+Categories=AudioVideo;Video;AudioVideoEditing;
+StartupNotify=true
+StartupWMClass=cr-remover-studio

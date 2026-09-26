@@ -1,0 +1,138 @@
+"""
+Pydantic v2 Data Models and Schemas for AI Shorts Creator & Video Editor.
+Strict typing, validation, and serialization.
+"""
+
+from enum import Enum
+from typing import Optional, List, Dict, Any, Literal
+from pydantic import BaseModel, Field
+
+
+class VoiceLocale(str, Enum):
+    EN_US = "en-US"
+    EN_GB = "en-GB"
+    EN_AU = "en-AU"
+    EN_IN = "en-IN"
+    HI_IN = "hi-IN"
+    ES_ES = "es-ES"
+    FR_FR = "fr-FR"
+    DE_DE = "de-DE"
+
+
+class TTSVoiceInfo(BaseModel):
+    id: str
+    name: str
+    gender: Literal["Male", "Female"]
+    locale: str
+    description: str
+
+
+class WordTiming(BaseModel):
+    word: str
+    start: float = Field(..., description="Start timestamp in seconds")
+    end: float = Field(..., description="End timestamp in seconds")
+
+
+class SceneBlock(BaseModel):
+    id: str
+    scene_index: int
+    narration_text: str
+    duration_seconds: float = Field(default=3.0, ge=0.5, le=60.0)
+    visual_keywords: List[str] = Field(default_factory=list)
+    video_source_path: Optional[str] = None
+    camera_effect: Literal["none", "slow_zoom_in", "slow_zoom_out", "punch_zoom", "pan_left"] = "slow_zoom_in"
+    transition: Literal["cut", "crossfade", "whip_pan", "zoom_blur"] = "cut"
+    sfx_trigger: Optional[Literal["whoosh", "bass_drop", "ding", "glitch", "none"]] = "whoosh"
+
+
+class GenerateTTSRequest(BaseModel):
+    text: str = Field(..., min_length=1, max_length=5000)
+    voice_name: str = Field(default="en-US-ChristopherNeural")
+    speed_factor: float = Field(default=1.05, ge=0.7, le=1.5)
+    pitch_cents: int = Field(default=0, ge=-100, le=100)
+
+
+class ParseScriptRequest(BaseModel):
+    script_text: str = Field(..., min_length=5, description="Full narration script")
+    gemini_api_key: Optional[str] = Field(default="", description="Optional Gemini API key for deep analysis")
+
+
+class GenerateScriptFromTopicRequest(BaseModel):
+    topic: str = Field(..., min_length=2, description="Topic or prompt for viral Shorts script")
+    tone: Literal["dramatic", "educational", "storytelling", "motivational", "mystery"] = "dramatic"
+    target_duration: int = Field(default=30, ge=15, le=60, description="Target duration in seconds")
+    gemini_api_key: Optional[str] = Field(default="", description="Optional Gemini API key")
+
+
+class AIShortsRenderRequest(BaseModel):
+    project_id: str
+    title: str = Field(default="AI_Viral_Short")
+    scenes: List[SceneBlock] = Field(..., min_items=1)
+    voice_audio_path: str = Field(..., description="Relative or absolute path to narration audio")
+    word_timings: List[WordTiming] = Field(default_factory=list)
+    
+    # Advanced Creator Subtitle Styling
+    subtitle_style: str = Field(default="hormozi_yellow") # Preset key or "custom"
+    subtitle_font_family: str = Field(default="Montserrat", description="Montserrat | Bebas Neue | Impact | Liberation Sans")
+    subtitle_font_size: int = Field(default=54, ge=24, le=80)
+    subtitle_text_case: Literal["uppercase", "capitalize", "original"] = "uppercase"
+    subtitle_active_color: str = Field(default="#FFE600", description="Hex active highlight color e.g. #FFE600, #22C55E")
+    subtitle_inactive_color: str = Field(default="#FFFFFF", description="Hex inactive word color e.g. #FFFFFF, #94A3B8")
+    subtitle_outline_color: str = Field(default="#000000", description="Hex stroke color")
+    subtitle_outline_width: int = Field(default=5, ge=0, le=10)
+    subtitle_background_box: bool = Field(default=True, description="Enable dark pill background box behind subtitles")
+    subtitle_words_per_line: int = Field(default=2, ge=1, le=5, description="1 word (Hormozi flash) | 2-3 words | 4-5 words")
+    subtitle_position_y: int = Field(default=420, ge=100, le=1200, description="Vertical bottom margin in 1080x1920 canvas")
+    subtitle_animation: Literal["pop", "glow", "none"] = "pop"
+    
+    # Progress Bar & Video Extras
+    progress_bar: bool = Field(default=True)
+    progress_bar_color: str = Field(default="#06b6d4") # Neon Cyan
+    
+    # Audio & Mixing
+    bgm_track: Literal["phonk_drive", "lofi_chill", "deep_tension", "epic_discovery", "upbeat_viral", "none"] = "phonk_drive"
+    bgm_volume: float = Field(default=0.18, ge=0.0, le=1.0)
+    ducking_intensity: float = Field(default=0.80, ge=0.0, le=1.0, description="Ducking percentage when voice is active")
+    
+    # Anti-Copyright & Quality
+    anti_copyright_shield: bool = Field(default=True)
+    use_gpu: bool = Field(default=True)
+
+
+class BatchAutoPilotRequest(BaseModel):
+    niche_id: str = Field(default="dark_psychology")
+    count: int = Field(default=5, ge=1, le=30)
+    voice_name: Optional[str] = None
+    bgm_track: Optional[str] = None
+    subtitle_style: Optional[str] = None
+    broll_category: Optional[str] = None
+    custom_topics: Optional[List[str]] = None
+    gemini_api_key: Optional[str] = ""
+
+
+class GenerateThumbnailRequest(BaseModel):
+    video_path: str = Field(...)
+    hook_text: str = Field(...)
+    badge_text: str = Field(default="MUST WATCH")
+    style_key: str = Field(default="viral_yellow")
+    timestamp_sec: float = Field(default=1.0)
+
+
+class GenerateMetadataRequest(BaseModel):
+    topic: str = Field(...)
+    script_summary: str = Field(default="")
+    niche: str = Field(default="general")
+    gemini_api_key: Optional[str] = ""
+
+
+class RedditStoryRequest(BaseModel):
+    subreddit: str = Field(default="r/AskReddit")
+    custom_prompt: str = Field(default="")
+    gemini_api_key: Optional[str] = ""
+
+
+class StockSearchRequest(BaseModel):
+    query: str = Field(default="")
+    count: int = Field(default=6, ge=1, le=20)
+    pexels_api_key: Optional[str] = ""
+

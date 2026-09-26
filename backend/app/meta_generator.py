@@ -14,7 +14,7 @@ from app.gemini_pool import gemini_pool
 
 
 class MetaGenerator:
-    """Produces multi-platform metadata packages for YouTube Shorts and Facebook Reels."""
+    """Produces multi-platform metadata packages for YouTube Shorts, Instagram Reels, TikTok, and Facebook."""
 
     @classmethod
     async def generate_metadata(
@@ -25,53 +25,68 @@ class MetaGenerator:
         gemini_api_key: Optional[str] = ""
     ) -> Dict[str, Any]:
         """
-        Generates comprehensive SEO metadata for YouTube Shorts & Facebook Reels.
+        Generates comprehensive SEO metadata for YouTube Shorts, Instagram Reels, TikTok & Facebook.
         """
-        clean_topic = topic.strip().title()
-        niche_tag = niche.replace("_", "").lower()
+        clean_topic = topic.strip().replace("_", " ").title()
+        niche_clean = re.sub(r"[^\w]", "", niche).lower()
+        if not niche_clean:
+            niche_clean = "viral"
+
         prompt = (
-            f"You are the top YouTube Shorts and TikTok algorithmic growth consultant for 10M+ subscriber creators.\n"
-            f"Topic: {topic}\n"
+            f"You are an elite viral content strategist and YouTube/TikTok growth specialist.\n"
+            f"Video Topic: {clean_topic}\n"
             f"Niche: {niche}\n"
-            f"Script Context: {script_summary}\n\n"
-            f"Create a high-CTR, algorithm-optimized metadata package in JSON ONLY:\n"
+            f"Context: {script_summary}\n\n"
+            f"Generate high-CTR, algorithm-optimized viral metadata in JSON ONLY:\n"
             f"{{\n"
             f'  "yt_titles": [\n'
-            f'    "Option 1: Extreme Curiosity Gap (under 50 chars with emoji)",\n'
-            f'    "Option 2: Shocking Revelation / Warning (under 50 chars with emoji)",\n'
-            f'    "Option 3: Provocative Question Hook (under 50 chars with emoji)"\n'
+            f'    "Shocking Curiosity Gap Title with emoji (max 45 chars)",\n'
+            f'    "Urgent Warning / Secret Reveal Title with emoji (max 45 chars)",\n'
+            f'    "Provocative Question Hook Title with emoji (max 45 chars)",\n'
+            f'    "Infinite Replay Story Hook Title with emoji (max 45 chars)"\n'
             f'  ],\n'
-            f'  "yt_description": "2-3 punchy sentences with natural high-volume search keywords, clear curiosity hook, #Shorts #{niche_tag}, and subscribe CTA.",\n'
-            f'  "yt_tags": ["#shorts", "#viral", "#trending", "#{niche_tag}", "#facts", "#mindblown", "#didyouknow", "#psychology", "#mystery"],\n'
-            f'  "pinned_comment": "A controversial, polarizing, or curiosity-inducing question that forces viewers to reply immediately (boosting algorithmic engagement).",\n'
-            f'  "fb_caption": "Engaging Facebook Reel caption with emojis, curiosity hook, and 5 hashtags.",\n'
-            f'  "fb_tags": ["#reels", "#viralreels", "#{niche_tag}", "#trending", "#fyp"]\n'
+            f'  "yt_description": "2-3 high-retention sentences with natural search keywords, curiosity hook, hashtags, and subscribe CTA.",\n'
+            f'  "yt_tags": ["#shorts", "#viral", "#trending", "#{niche_clean}", "#facts", "#mindblown", "#didyouknow", "#foryou", "#explore"],\n'
+            f'  "ig_tags": ["#reels", "#reelsinstagram", "#viralreels", "#explorepage", "#trendingreels", "#{niche_clean}", "#instareels", "#fyp"],\n'
+            f'  "tiktok_tags": ["#fyp", "#viral", "#foryou", "#foryoupage", "#trending", "#{niche_clean}", "#tiktok", "#relatable"],\n'
+            f'  "fb_tags": ["#reels", "#viralreels", "#{niche_clean}", "#trending", "#fbreels", "#fyp"],\n'
+            f'  "pinned_comment": "A controversial or curiosity-inducing question that forces viewers to reply immediately.",\n'
+            f'  "fb_caption": "Engaging Facebook Reel caption with emojis, curiosity hook, and 5 hashtags."\n'
             f"}}"
         )
 
-        clean_topic = topic.strip().title()
-        niche_tag = niche.replace("_", "").lower()
         fallback = {
             "yt_titles": [
-                f"The Forbidden Truth About {clean_topic[:30]} 🤫",
-                f"Why Nobody Is Allowed To Talk About This ⚠️",
-                f"Did You Notice The Hidden Detail In {clean_topic[:25]}? 🤯"
+                f"The Bizarre Secret Behind {clean_topic[:25]} 🤫",
+                f"Why Nobody Talks About This Truth ⚠️",
+                f"Did You Notice What Happened Here? 🤯",
+                f"The 1 Thing They Never Told You ⚡"
             ],
             "yt_description": (
-                f"The hidden facts about {clean_topic} that will completely change how you see this. "
-                f"Subscribe for daily mind-blowing facts, psychology secrets, and historical breakdowns! #Shorts #{niche_tag} #Viral"
+                f"The shocking truth about {clean_topic} that changed everything. "
+                f"Subscribe for daily viral breakdowns, hidden secrets, and fascinating stories! #Shorts #{niche_clean} #Viral #Trending"
             ),
             "yt_tags": [
-                "#shorts", "#viral", "#trending", f"#{niche_tag}",
-                "#facts", "#mindblown", "#didyouknow", "#psychology", "#mystery", "#foryou"
+                "#shorts", "#viral", "#trending", f"#{niche_clean}",
+                "#facts", "#mindblown", "#didyouknow", "#foryou", "#explore", "#viralvideo"
             ],
-            "pinned_comment": f"👇 What would you have done in this exact situation? Drop your unfiltered reaction below! 👇",
+            "ig_tags": [
+                "#reels", "#reelsinstagram", "#viralreels", "#explorepage",
+                "#trendingreels", f"#{niche_clean}", "#instareels", "#fyp", "#foryou"
+            ],
+            "tiktok_tags": [
+                "#fyp", "#viral", "#foryou", "#foryoupage",
+                "#trending", f"#{niche_clean}", "#tiktok", "#viralvideo", "#xyzbca"
+            ],
+            "fb_tags": [
+                "#reels", "#viralreels", f"#{niche_clean}", "#trending", "#fbreels", "#fyp"
+            ],
+            "pinned_comment": "👇 What is your honest unfiltered reaction to this? Drop your thoughts below! 👇",
             "fb_caption": (
-                f"Wait until you see what was hidden in {clean_topic}... 🤯\n\n"
-                f"Have you ever heard of this before? Tell us below! 👇\n\n"
-                f"#reels #viralreels #{niche_tag} #trending #fbreels"
-            ),
-            "fb_tags": ["#reels", "#viralreels", f"#{niche_tag}", "#trending", "#fyp"]
+                f"Wait until you see what was revealed in {clean_topic}... 🤯\n\n"
+                f"What do you think? Tell us in the comments! 👇\n\n"
+                f"#reels #viralreels #{niche_clean} #trending #fbreels"
+            )
         }
 
         try:
@@ -82,10 +97,38 @@ class MetaGenerator:
                 fallback=fallback
             )
             if isinstance(res, dict) and res.get("yt_titles"):
+                # Clean titles of prefix artifacts like "Option 1: "
+                clean_titles = []
+                for t in res.get("yt_titles", []):
+                    clean_t = re.sub(r"^(Option \d+:|Title \d+:|\d+\.\s*)", "", str(t)).strip().strip('"')
+                    if clean_t:
+                        clean_titles.append(clean_t)
+                res["yt_titles"] = clean_titles or fallback["yt_titles"]
+                
+                # Ensure all tag lists exist
+                if not res.get("ig_tags"):
+                    res["ig_tags"] = fallback["ig_tags"]
+                if not res.get("tiktok_tags"):
+                    res["tiktok_tags"] = fallback["tiktok_tags"]
+                if not res.get("fb_tags"):
+                    res["fb_tags"] = fallback["fb_tags"]
+                if not res.get("yt_tags"):
+                    res["yt_tags"] = fallback["yt_tags"]
+
+                # Add combined hashtags string for 1-click copy
+                all_tags_set = []
+                for tag_list in [res.get("yt_tags", []), res.get("ig_tags", []), res.get("tiktok_tags", [])]:
+                    for t in tag_list:
+                        clean_tag = t if t.startswith("#") else f"#{t}"
+                        if clean_tag not in all_tags_set:
+                            all_tags_set.append(clean_tag)
+                res["all_tags_bundle"] = " ".join(all_tags_set[:15])
+
                 return res
             return fallback
         except Exception as e:
             print(f"[MetaGenerator] Gemini metadata fallback: {e}")
+            fallback["all_tags_bundle"] = " ".join(fallback["yt_tags"][:12])
             return fallback
 
     @classmethod

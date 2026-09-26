@@ -156,6 +156,7 @@ class BatchAutoPilotEngine:
         voice_name: Optional[str] = None,
         bgm_track: Optional[str] = None,
         subtitle_style: Optional[str] = None,
+        visual_mode: str = "ai_scenes",
         broll_category: Optional[str] = None,
         duration_mode: str = "auto",
         target_duration: Optional[int] = None,
@@ -198,7 +199,7 @@ class BatchAutoPilotEngine:
 
             if progress_callback:
                 progress_callback(
-                    f"[{idx+1}/{total_videos}] Writing Viral Script & Storyboard for: {topic[:30]}...",
+                    f"[{idx+1}/{total_videos}] Writing Viral Script & Scene Breakdown: {topic[:30]}...",
                     overall_pct + 2,
                     {"current_index": idx + 1, "total": total_videos, "topic": topic}
                 )
@@ -229,7 +230,7 @@ class BatchAutoPilotEngine:
             # 2. Neural TTS Generation with word timings
             if progress_callback:
                 progress_callback(
-                    f"[{idx+1}/{total_videos}] Synthesizing Neural Speech & Timings...",
+                    f"[{idx+1}/{total_videos}] Synthesizing Natural Voice & Timings...",
                     overall_pct + 5,
                     {"current_index": idx + 1, "total": total_videos, "topic": topic}
                 )
@@ -246,20 +247,29 @@ class BatchAutoPilotEngine:
             total_dur = tts_res.get("duration", 30.0)
             word_timings = [WordTiming(**w) for w in tts_res.get("word_timings", [])]
 
-            # 3. Scene Breakdown & B-Roll Match
+            # 3. Scene Breakdown & Visual Generation
+            if progress_callback:
+                progress_callback(
+                    f"[{idx+1}/{total_videos}] Generating {'AI Scene Visuals' if visual_mode == 'ai_scenes' else 'Stock B-Roll'} for subtitles...",
+                    overall_pct + 8,
+                    {"current_index": idx + 1, "total": total_videos, "topic": topic}
+                )
+
             scenes_raw = await SceneDirector.parse_script_to_scenes(script_text, gemini_api_key=gemini_api_key)
             
             # Allocate durations based on number of scenes
             scene_dur = max(2.0, total_dur / max(1, len(scenes_raw)))
             for sc_idx, sc in enumerate(scenes_raw):
                 sc.duration_seconds = scene_dur
-                # Match B-Roll clip
-                broll_file = await BRollHarvester.match_broll_for_keywords(
-                    keywords=sc.visual_keywords,
+                # Generate matching visual clip (AI Scene Image + Ken Burns OR Stock B-Roll)
+                scene_vid = await BRollHarvester.generate_scene_video_for_block(
+                    scene=sc,
                     duration=scene_dur,
-                    preferred_category=selected_broll
+                    preferred_category=selected_broll,
+                    visual_mode=visual_mode,
+                    niche_id=niche_id
                 )
-                sc.video_source_path = str(broll_file)
+                sc.video_source_path = str(scene_vid)
 
             # 4. Render 9:16 Video
             if progress_callback:

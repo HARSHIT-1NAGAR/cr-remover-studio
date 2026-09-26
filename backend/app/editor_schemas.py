@@ -39,6 +39,7 @@ class SceneBlock(BaseModel):
     narration_text: str
     duration_seconds: float = Field(default=3.0, ge=0.5, le=60.0)
     visual_keywords: List[str] = Field(default_factory=list)
+    visual_image_prompt: Optional[str] = Field(default=None, description="Detailed prompt for AI scene image generation")
     video_source_path: Optional[str] = None
     camera_effect: Literal["none", "slow_zoom_in", "slow_zoom_out", "punch_zoom", "pan_left"] = "slow_zoom_in"
     transition: Literal["cut", "crossfade", "whip_pan", "zoom_blur"] = "cut"
@@ -47,7 +48,7 @@ class SceneBlock(BaseModel):
 
 class GenerateTTSRequest(BaseModel):
     text: str = Field(..., min_length=1, max_length=5000)
-    voice_name: str = Field(default="en-US-ChristopherNeural")
+    voice_name: str = Field(default="en-IN-NeerjaExpressiveNeural")
     speed_factor: float = Field(default=1.05, ge=0.7, le=1.5)
     pitch_cents: int = Field(default=0, ge=-100, le=100)
 
@@ -105,6 +106,7 @@ class BatchAutoPilotRequest(BaseModel):
     voice_name: Optional[str] = None
     bgm_track: Optional[str] = None
     subtitle_style: Optional[str] = None
+    visual_mode: str = Field(default="ai_scenes", description="ai_scenes (subtitle prompt-matched visuals) | stock_broll (gameplay / cinematic canvas)")
     broll_category: Optional[str] = None
     duration_mode: str = Field(default="auto", description="quick_30s | standard_50s | deep_75s | auto")
     target_duration: Optional[int] = Field(default=None, ge=15, le=120)

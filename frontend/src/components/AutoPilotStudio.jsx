@@ -16,9 +16,10 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
   const [selectedNiche, setSelectedNiche] = useState('dark_psychology')
   const [batchCount, setBatchCount] = useState(5)
   const [voices, setVoices] = useState([])
-  const [selectedVoice, setSelectedVoice] = useState('en-US-ChristopherNeural')
+  const [selectedVoice, setSelectedVoice] = useState('en-IN-NeerjaExpressiveNeural')
   const [selectedBgm, setSelectedBgm] = useState('phonk_drive')
   const [selectedSubStyle, setSelectedSubStyle] = useState('hormozi_yellow')
+  const [visualMode, setVisualMode] = useState('ai_scenes') // ai_scenes | stock_broll
   const [selectedBroll, setSelectedBroll] = useState('neural_brain')
   const [geminiApiKey, setGeminiApiKey] = useState('')
   const [customTopics, setCustomTopics] = useState('')
@@ -230,6 +231,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
           voice_name: selectedVoice,
           bgm_track: selectedBgm,
           subtitle_style: selectedSubStyle,
+          visual_mode: visualMode,
           broll_category: selectedBroll,
           duration_mode: durationMode,
           custom_topics: topicsArr.length > 0 ? topicsArr : null,
@@ -242,6 +244,35 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
       setIsRenderingBatch(false)
       alert(`Failed to launch batch: ${err.message}`)
     }
+  }
+
+  // Delete Individual Video from Batch Queue and Disk
+  const handleDeleteBatchVideo = async (videoIndex) => {
+    if (activeBatchId) {
+      try {
+        await fetch(`/api/autopilot/batch/${activeBatchId}/video/${videoIndex}`, {
+          method: 'DELETE'
+        })
+      } catch (e) {
+        console.error('Delete error:', e)
+      }
+    }
+    setBatchResults(prev => prev.filter(item => item.index !== videoIndex))
+  }
+
+  // Clear Entire Batch Queue
+  const handleClearAllBatch = async () => {
+    if (!window.confirm('Are you sure you want to clear all videos from this queue?')) return
+    if (activeBatchId) {
+      try {
+        await fetch(`/api/autopilot/batch/${activeBatchId}`, {
+          method: 'DELETE'
+        })
+      } catch (e) {
+        console.error('Clear batch error:', e)
+      }
+    }
+    setBatchResults([])
   }
 
   // Generate Script from Live Trend
@@ -695,19 +726,74 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                 </div>
               </div>
 
+              {/* Visual Presentation Mode Selector */}
+              <div style={{ marginTop: 'var(--space-3)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Film size={13} color="var(--accent)" />
+                    Visual Presentation Mode
+                  </label>
+                  <span style={{ fontSize: '10px', color: visualMode === 'ai_scenes' ? '#a855f7' : 'var(--accent)', fontWeight: 700 }}>
+                    {visualMode === 'ai_scenes' ? '🎨 AI Scene Art (Subtitle Matched)' : '🎞️ Gameplay & Stock Canvas'}
+                  </span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setVisualMode('ai_scenes')}
+                    style={{
+                      padding: '10px', borderRadius: 'var(--radius-sm)',
+                      background: visualMode === 'ai_scenes' ? 'rgba(168, 85, 247, 0.15)' : 'var(--bg-elevated)',
+                      color: visualMode === 'ai_scenes' ? '#c084fc' : 'var(--text-primary)',
+                      border: visualMode === 'ai_scenes' ? '1.5px solid #a855f7' : '1px solid var(--border)',
+                      fontSize: '12px', fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                      display: 'flex', flexDirection: 'column', gap: '3px', transition: 'all var(--transition)'
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      🎨 <strong>AI Scene Visuals</strong> (Recommended)
+                    </span>
+                    <span style={{ fontSize: '10px', opacity: 0.85, fontWeight: 400 }}>
+                      Generates custom 9:16 vertical AI art per subtitle sentence + smooth Ken Burns zoom
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setVisualMode('stock_broll')}
+                    style={{
+                      padding: '10px', borderRadius: 'var(--radius-sm)',
+                      background: visualMode === 'stock_broll' ? 'rgba(99, 102, 241, 0.15)' : 'var(--bg-elevated)',
+                      color: visualMode === 'stock_broll' ? 'var(--accent)' : 'var(--text-primary)',
+                      border: visualMode === 'stock_broll' ? '1.5px solid var(--accent)' : '1px solid var(--border)',
+                      fontSize: '12px', fontWeight: 600, cursor: 'pointer', textAlign: 'left',
+                      display: 'flex', flexDirection: 'column', gap: '3px', transition: 'all var(--transition)'
+                    }}
+                  >
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      🎞️ <strong>Stock & Gameplay Loops</strong>
+                    </span>
+                    <span style={{ fontSize: '10px', opacity: 0.85, fontWeight: 400 }}>
+                      Minecraft parkour, Subway Runner, ASMR, and Cyberpunk motion backgrounds
+                    </span>
+                  </button>
+                </div>
+              </div>
+
               {/* Advanced Customization Rows */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginTop: 'var(--space-2)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)', marginTop: 'var(--space-3)' }}>
                 
                 {/* Voice Selection with Live Audition */}
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                     <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)' }}>
-                      🎙️ Neural Voice
+                      🎙️ Natural Voice (Hinglish / Hindi / English)
                     </label>
                     <button
+                      type="button"
                       onClick={() => handleAuditionVoice(selectedVoice)}
                       disabled={isPlayingVoice}
-                      style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px', padding: 0 }}
+                      style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px', padding: 0, fontWeight: 600 }}
                     >
                       <Volume2 size={10} /> {isPlayingVoice ? 'Speaking...' : 'Audition'}
                     </button>
@@ -717,9 +803,24 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                     onChange={e => setSelectedVoice(e.target.value)}
                     style={{ width: '100%', padding: '8px', borderRadius: 'var(--radius-sm)', background: 'var(--bg-card)', color: 'var(--text-primary)', border: '1px solid var(--border)', fontSize: 'var(--text-xs)' }}
                   >
-                    {voices.map(v => (
-                      <option key={v.id} value={v.id}>{v.name} ({v.gender})</option>
-                    ))}
+                    <optgroup label="🇮🇳 Hinglish & Indian English (Ultra Natural)">
+                      <option value="en-IN-NeerjaExpressiveNeural">🇮🇳 Neerja Expressive (Hinglish / Female)</option>
+                      <option value="en-IN-PrabhatNeural">🇮🇳 Prabhat (Hinglish / Male Explainer)</option>
+                      <option value="en-IN-NeerjaNeural">🇮🇳 Neerja Standard (Hinglish / Female)</option>
+                    </optgroup>
+                    <optgroup label="🇮🇳 Pure Hindi (हिंदी Storytelling)">
+                      <option value="hi-IN-MadhurNeural">🇮🇳 Madhur (Hindi Storyteller / Deep Male)</option>
+                      <option value="hi-IN-SwaraNeural">🇮🇳 Swara (Hindi Narrative / Female)</option>
+                    </optgroup>
+                    <optgroup label="🇺🇸/🇬🇧 English (High Retention Voices)">
+                      <option value="en-US-AndrewMultilingualNeural">🇺🇸 Andrew (Ultra-Natural / Human Male)</option>
+                      <option value="en-US-BrianMultilingualNeural">🇺🇸 Brian (Smart Tech Explainer / Male)</option>
+                      <option value="en-US-AvaMultilingualNeural">🇺🇸 Ava (Dynamic Expressive / Female)</option>
+                      <option value="en-US-EmmaMultilingualNeural">🇺🇸 Emma (Cheerful Creator / Female)</option>
+                      <option value="en-US-ChristopherNeural">🇺🇸 Christopher (Dark Noir Storyteller)</option>
+                      <option value="en-GB-RyanNeural">🇬🇧 Ryan (British BBC Documentary)</option>
+                      <option value="en-US-GuyNeural">🇺🇸 Guy (Fast Viral Creator)</option>
+                    </optgroup>
                   </select>
                 </div>
 
@@ -747,6 +848,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                       🎵 Background Music
                     </label>
                     <button
+                      type="button"
                       onClick={() => togglePlayBgm(selectedBgm)}
                       style={{ background: 'none', border: 'none', color: playingBgm === selectedBgm ? '#22c55e' : 'var(--accent)', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '2px', padding: 0 }}
                     >
@@ -767,10 +869,10 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                   </select>
                 </div>
 
-                {/* B-Roll Theme */}
+                {/* B-Roll Theme / Fallback */}
                 <div>
                   <label style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '4px' }}>
-                    🎞️ Stock B-Roll Vault
+                    {visualMode === 'ai_scenes' ? '🎞️ Motion Fallback / Canvas' : '🎞️ Stock B-Roll Vault'}
                   </label>
                   <select
                     value={selectedBroll}
@@ -789,12 +891,14 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                 </div>
               </div>
 
-              {/* Auto-SFX Indicator */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', background: 'var(--green-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(34, 197, 94, 0.25)' }}>
-                <Volume2 size={14} color="var(--green)" />
-                <span style={{ fontSize: '11px', color: 'var(--green)', fontWeight: 600 }}>
-                  Intelligent Auto-SFX Active: Sub-bass hook drop + transition whooshes + power word dings automatically staged.
-                </span>
+              {/* Auto-SFX & AI Visuals Active Indicator */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--green-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(34, 197, 94, 0.25)', marginTop: 'var(--space-2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Sparkles size={14} color="var(--green)" />
+                  <span style={{ fontSize: '11px', color: 'var(--green)', fontWeight: 600 }}>
+                    {visualMode === 'ai_scenes' ? '🎨 Scene-by-Scene AI Visual Generation Active' : '🎞️ 60fps Hypnotic B-Roll Active'} • Auto-SFX & Sub-bass ducking enabled
+                  </span>
+                </div>
               </div>
 
               {/* Optional Custom Topics Input */}
@@ -878,7 +982,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                 {batchResults.length > 0 && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{ fontSize: 'var(--text-xs)', color: 'var(--green)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <Check size={14} /> Saved in ~/Desktop/CR_Remover_Exports/
+                      <Check size={14} /> Saved on Desktop
                     </span>
                     <button
                       onClick={() => fetch('/api/exports/open-desktop-folder', { method: 'POST' })}
@@ -886,7 +990,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                         background: 'rgba(56, 189, 248, 0.15)',
                         border: '1px solid rgba(56, 189, 248, 0.3)',
                         color: '#38bdf8',
-                        padding: '3px 8px',
+                        padding: '4px 9px',
                         borderRadius: '6px',
                         fontSize: '0.72rem',
                         fontWeight: 600,
@@ -894,6 +998,24 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                       }}
                     >
                       📂 Open Folder
+                    </button>
+                    <button
+                      onClick={handleClearAllBatch}
+                      style={{
+                        background: 'rgba(239, 68, 68, 0.15)',
+                        border: '1px solid rgba(239, 68, 68, 0.3)',
+                        color: '#ef4444',
+                        padding: '4px 9px',
+                        borderRadius: '6px',
+                        fontSize: '0.72rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '3px'
+                      }}
+                    >
+                      <Trash2 size={12} /> Clear Queue
                     </button>
                   </div>
                 )}
@@ -913,11 +1035,12 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)', maxHeight: '600px', overflowY: 'auto' }}>
                   {batchResults.map((item, idx) => (
                     <div
-                      key={idx}
+                      key={item.index || idx}
                       style={{
                         padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
                         background: 'var(--bg-secondary)', border: '1px solid var(--border)',
-                        display: 'grid', gridTemplateColumns: '110px 1fr', gap: 'var(--space-3)'
+                        display: 'grid', gridTemplateColumns: '110px 1fr', gap: 'var(--space-3)',
+                        position: 'relative'
                       }}
                     >
                       {/* Video / Cover Preview */}
@@ -933,14 +1056,37 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                       {/* Content & Metadata Details */}
                       <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                         <div>
-                          {/* Schedule badge */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '10px', background: 'var(--accent-glow)', color: 'var(--accent)', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
-                              {item.schedule_day} • {item.schedule_time}
-                            </span>
-                            <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
-                              {Math.round(item.duration)}s duration
-                            </span>
+                          {/* Schedule badge & Delete Top Right Button */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                              <span style={{ fontSize: '10px', background: 'var(--accent-glow)', color: 'var(--accent)', padding: '1px 6px', borderRadius: '4px', fontWeight: 700 }}>
+                                {item.schedule_day} • {item.schedule_time}
+                              </span>
+                              <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                                {Math.round(item.duration)}s duration
+                              </span>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteBatchVideo(item.index)}
+                              title="Delete this generated video & files"
+                              style={{
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.25)',
+                                color: '#ef4444',
+                                borderRadius: '4px',
+                                padding: '3px 6px',
+                                fontSize: '10px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '3px',
+                                fontWeight: 600
+                              }}
+                            >
+                              <Trash2 size={11} /> Delete
+                            </button>
                           </div>
 
                           <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, margin: '0 0 6px 0', color: 'var(--text-primary)', lineHeight: 1.3 }}>
@@ -952,7 +1098,7 @@ export default function AutoPilotStudio({ systemInfo, onOpenKeyModal }) {
                           </p>
                         </div>
 
-                        {/* Quick 1-Click Copy & Download actions */}
+                        {/* Quick 1-Click Copy, Download & Delete actions */}
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                           <button
                             onClick={() => copyToClipboard(

@@ -739,6 +739,7 @@ async def start_batch_autopilot(
                 voice_name=payload.voice_name,
                 bgm_track=payload.bgm_track,
                 subtitle_style=payload.subtitle_style,
+                visual_mode=payload.visual_mode or "ai_scenes",
                 broll_category=payload.broll_category,
                 duration_mode=payload.duration_mode,
                 target_duration=payload.target_duration,
@@ -766,6 +767,76 @@ async def get_batch_status(batch_id: str):
     if not job:
         raise HTTPException(status_code=404, detail="Batch job not found")
     return job
+
+
+@app.delete("/api/autopilot/batch/{batch_id}/video/{video_index}")
+async def delete_autopilot_video(batch_id: str, video_index: int):
+    """Deletes a generated video, thumbnail cover, and metadata file from disk and removes it from the batch queue."""
+    job = BATCH_JOBS.get(batch_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Batch job not found")
+
+    results = job.get("results", [])
+    target_item = None
+    target_idx = -1
+
+    for idx, item in enumerate(results):
+        if item.get("index") == video_index:
+            target_item = item
+            target_idx = idx
+            break
+
+    if target_idx == -1:
+        raise HTTPException(status_code=404, detail=f"Video index {video_index} not found in batch")
+
+    # Remove files from disk
+    export_path = target_item.get("export_path")
+    if export_path and os.path.exists(export_path):
+        try:
+            os.remove(export_path)
+            # Also clean cover and metadata file in same directory
+            base_p = Path(export_path).parent
+            vid_name = target_item.get("video_filename", "")
+            if vid_name:
+                stem = vid_name.replace("VIRAL_SHORT_", "").replace("_9x16.mp4", "")
+                for f in base_p.glob(f"*{stem}*"):
+                    try:
+                        if f.is_file():
+                            os.remove(f)
+                    except Exception:
+                        pass
+        except Exception as e:
+            print(f"[AutoPilot] Error deleting video from disk: {e}")
+
+    # Remove from in-memory batch results
+    removed_item = results.pop(target_idx)
+    job["results"] = results
+
+    return {
+        "success": True,
+        "message": f"Deleted video #{video_index} ({removed_item.get('title', '')})",
+        "remaining_count": len(results)
+    }
+
+
+@app.delete("/api/autopilot/batch/{batch_id}")
+async def clear_autopilot_batch(batch_id: str):
+    """Clears the entire batch and deletes generated files."""
+    job = BATCH_JOBS.get(batch_id)
+    if not job:
+        return {"success": True, "message": "Batch already cleared"}
+
+    # Clean files from disk
+    for item in job.get("results", []):
+        exp_path = item.get("export_path")
+        if exp_path and os.path.exists(exp_path):
+            try:
+                os.remove(exp_path)
+            except Exception:
+                pass
+
+    BATCH_JOBS.pop(batch_id, None)
+    return {"success": True, "message": f"Batch {batch_id} cleared"}
 
 
 @app.get("/api/broll/categories")

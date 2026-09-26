@@ -113,7 +113,8 @@ class SceneDirector:
             f"For each scene provide:\n"
             f"- scene_index: integer starting at 1\n"
             f"- narration_text: exact slice of script spoken in this scene\n"
-            f"- visual_keywords: list of 3-4 concrete B-roll stock footage search tags (e.g. ['cyberpunk neon city', 'dark mysterious hallway', 'ancient roman colosseum'])\n"
+            f"- visual_keywords: list of 3-4 concrete stock footage search tags (e.g. ['cyberpunk neon city', 'dark hallway', 'ancient colosseum'])\n"
+            f"- visual_image_prompt: highly detailed photorealistic AI image generation prompt matching this exact line of narration (e.g. 'hyperrealistic 8k cinematic vertical shot of an ancient Egyptian golden sarcophagus opening in a dark tomb with volumetric light rays, dramatic depth of field, Octane render, 9:16 portrait')\n"
             f"- camera_effect: one of 'slow_zoom_in', 'slow_zoom_out', 'punch_zoom', 'pan_left'\n"
             f"- transition: one of 'cut', 'whip_pan', 'zoom_blur', 'crossfade'\n"
             f"- sfx_trigger: one of 'whoosh', 'bass_drop', 'ding', 'glitch', 'none'\n\n"
@@ -123,6 +124,7 @@ class SceneDirector:
             f'    "scene_index": 1,\n'
             f'    "narration_text": "...",\n'
             f'    "visual_keywords": ["keyword1", "keyword2", "keyword3"],\n'
+            f'    "visual_image_prompt": "cinematic hyperrealistic 8k vertical shot of...",\n'
             f'    "camera_effect": "punch_zoom",\n'
             f'    "transition": "cut",\n'
             f'    "sfx_trigger": "bass_drop"\n'
@@ -142,12 +144,16 @@ class SceneDirector:
                 scenes = []
                 for idx, sc in enumerate(raw_scenes):
                     if isinstance(sc, dict) and sc.get("narration_text"):
+                        narr = sc.get("narration_text", "").strip()
+                        kw = sc.get("visual_keywords", ["cinematic 4k", "dramatic lighting"])
+                        img_p = sc.get("visual_image_prompt") or f"cinematic 8k vertical shot of {' '.join(kw[:3])}, dramatic lighting, 9:16 portrait, masterpiece"
                         scenes.append(
                             SceneBlock(
                                 id=f"scene_{idx+1}_{str(uuid.uuid4())[:4]}",
                                 scene_index=idx + 1,
-                                narration_text=sc.get("narration_text", "").strip(),
-                                visual_keywords=sc.get("visual_keywords", ["cinematic 4k", "dramatic lighting"]),
+                                narration_text=narr,
+                                visual_keywords=kw,
+                                visual_image_prompt=img_p,
                                 camera_effect=sc.get("camera_effect", "slow_zoom_in"),
                                 transition=sc.get("transition", "cut"),
                                 sfx_trigger=sc.get("sfx_trigger", "whoosh")
@@ -172,6 +178,7 @@ class SceneDirector:
             words = re.findall(r"\b[A-Za-z]{4,}\b", sentence)
             keywords = words[:3] if words else ["cinematic dark background", "4k footage"]
             keywords.append("shorts 9:16")
+            img_prompt = f"hyperrealistic 8k cinematic vertical shot of {sentence[:80]}, dramatic atmospheric lighting, 9:16 portrait"
 
             scenes.append(
                 SceneBlock(
@@ -180,6 +187,7 @@ class SceneDirector:
                     narration_text=sentence,
                     duration_seconds=max(2.5, len(sentence.split()) * 0.35),
                     visual_keywords=keywords,
+                    visual_image_prompt=img_prompt,
                     camera_effect=effects[idx % len(effects)],
                     transition=transitions[idx % len(transitions)],
                     sfx_trigger=sfxs[idx % len(sfxs)]

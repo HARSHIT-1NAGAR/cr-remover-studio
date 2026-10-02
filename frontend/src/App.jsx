@@ -8,6 +8,7 @@ import ProgressModal from './components/ProgressModal'
 import AutoViralStudio from './components/AutoViralStudio'
 import AIShortsStudio from './components/AIShortsStudio'
 import AutoPilotStudio from './components/AutoPilotStudio'
+import ShortsThumbnailStudio from './components/ShortsThumbnailStudio'
 import GeminiKeyModal from './components/GeminiKeyModal'
 import ExportsModal from './components/ExportsModal'
 import { Sparkles } from 'lucide-react'
@@ -42,9 +43,11 @@ export default function App() {
     mirror_flip: false,
     ken_burns_zoom: 1.07,
     color_grade: true,
-    film_grain: 2.0,
+    clarity_boost: false,
+    film_grain: 0.0,
     tilt_3d: false,
     shorts_vertical_916: false,
+    render_resolution: 'original',
     dynamic_time_warp: true,
     watermark_blur: false,
     watermark_position: 'bottom_right',
@@ -215,6 +218,12 @@ export default function App() {
         <AutoPilotStudio systemInfo={systemInfo} onOpenKeyModal={() => setIsKeyModalOpen(true)} />
       ) : activeMode === 'ai_shorts' ? (
         <AIShortsStudio systemInfo={systemInfo} onOpenKeyModal={() => setIsKeyModalOpen(true)} />
+      ) : activeMode === 'thumbnail' ? (
+        <ShortsThumbnailStudio
+          initialVideoPath={uploadedVideo?.path || jobStatus?.output_url || ''}
+          initialTopic={uploadedVideo?.name || 'Viral Video'}
+          onOpenExportsModal={() => setIsExportsModalOpen(true)}
+        />
       ) : activeMode === 'auto_viral' ? (
         <AutoViralStudio onOpenKeyModal={() => setIsKeyModalOpen(true)} />
       ) : jobStatus?.status === 'completed' ? (

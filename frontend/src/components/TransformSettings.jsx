@@ -1,5 +1,5 @@
 import React from 'react'
-import { Eye, Volume2, Smartphone, Shield, ShieldCheck } from 'lucide-react'
+import { Eye, Volume2, Smartphone, Shield, ShieldCheck, Sparkles, Monitor } from 'lucide-react'
 
 function Toggle({ label, desc, checked, onChange }) {
   return (
@@ -55,18 +55,18 @@ function SectionLabel({ icon: Icon, children }) {
 export default function TransformSettings({ params, setParams }) {
   const update = (key, val) => setParams(prev => ({ ...prev, [key]: val, preset: 'custom' }))
 
-  const score = Math.min(99, 30
-    + (params.dynamic_time_warp ? 20 : 0)
-    + (params.harmonic_notch_eq ? 18 : 0)
-    + (params.camera_exif_injection ? 12 : 0)
-    + (params.ken_burns_zoom >= 1.04 ? 10 : 0)
-    + (params.film_grain >= 1.0 ? 5 : 0)
-    + (params.color_grade ? 5 : 0)
+  const score = Math.min(99, 35
+    + (params.dynamic_time_warp ? 22 : 0)
+    + (params.harmonic_notch_eq ? 20 : 0)
+    + (params.camera_exif_injection ? 15 : 0)
+    + (params.ken_burns_zoom >= 1.04 ? 12 : 0)
+    + (params.color_grade ? 6 : 0)
     + (params.isolate_vocals ? 15 : 0)
     + (params.mirror_flip ? 5 : 0)
   )
 
   const scoreColor = score >= 90 ? 'var(--green)' : score >= 70 ? 'var(--amber)' : 'var(--red)'
+  const currentRes = params.render_resolution || 'original'
 
   return (
     <div className="card">
@@ -89,8 +89,73 @@ export default function TransformSettings({ params, setParams }) {
       </div>
 
       <div className="card-body">
+        {/* Output Resolution & Quality */}
+        <SectionLabel icon={Monitor}>Master Render Resolution & Clarity</SectionLabel>
+
+        <div style={{ padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>Target Output Resolution</div>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                Upscale to cinema 4K UHD or preserve 100% native source resolution
+              </div>
+            </div>
+            <span style={{
+              fontSize: '0.74rem', fontWeight: 700, padding: '2px 8px', borderRadius: '4px',
+              background: currentRes === '4k' ? 'rgba(236,72,153,0.15)' : 'rgba(99,102,241,0.15)',
+              color: currentRes === '4k' ? '#ec4899' : '#818cf8',
+              border: `1px solid ${currentRes === '4k' ? 'rgba(236,72,153,0.3)' : 'rgba(99,102,241,0.3)'}`
+            }}>
+              {currentRes === '4k' ? '👑 4K UHD (50Mbps)' : currentRes === '2k' ? '🌟 2K QHD (30Mbps)' : currentRes === '1080p' ? '📺 1080p FHD' : '💎 Original (Source Match)'}
+            </span>
+          </div>
+
+          {/* Resolution Options Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginTop: '8px' }}>
+            {[
+              { id: 'original', label: '💎 Original (Source Match)', desc: '100% lossless native pixels, zero downscale' },
+              { id: '4k', label: '👑 4K Ultra HD (Master)', desc: '3840×2160 / 2160×3840 (50 Mbps Cinema)' },
+              { id: '2k', label: '🌟 2K QHD (Studio)', desc: '2560×1440 / 1440×2560 (30 Mbps Pro)' },
+              { id: '1080p', label: '📺 1080p Full HD', desc: '1920×1080 / 1080×1920 standard' }
+            ].map(r => (
+              <button
+                key={r.id}
+                type="button"
+                onClick={() => update('render_resolution', r.id)}
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  gap: '3px',
+                  padding: '9px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  border: currentRes === r.id ? '1px solid #818cf8' : '1px solid var(--border)',
+                  background: currentRes === r.id ? 'rgba(99, 102, 241, 0.14)' : 'var(--card-bg)',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: currentRes === r.id ? '#a5b4fc' : 'var(--text-primary)' }}>
+                  {r.label}
+                </div>
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                  {r.desc}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <Toggle
+          label="Clarity & Detail Boost (Unsharp)"
+          desc="Adaptive spatial sharpening to restore razor-sharp edges and high-frequency textures"
+          checked={params.clarity_boost ?? false}
+          onChange={e => update('clarity_boost', e.target.checked)}
+        />
+
         {/* Visual & Temporal */}
-        <SectionLabel icon={Eye}>Visual & Temporal</SectionLabel>
+        <SectionLabel icon={Eye}>Visual & Temporal Protections</SectionLabel>
 
         <Toggle
           label="Dynamic Time-Warping"
@@ -124,24 +189,24 @@ export default function TransformSettings({ params, setParams }) {
         />
 
         <SliderRow
-          label="Ken Burns Zoom"
-          desc="Continuous pan motion to disrupt spatial keyframe histograms"
+          label="Ken Burns Dynamic Pan & Zoom"
+          desc="Smooth continuous pan motion to disrupt spatial keyframe hashes"
           min={1.00} max={1.15} step={0.01}
           value={params.ken_burns_zoom}
           onChange={e => update('ken_burns_zoom', parseFloat(e.target.value))}
           format={v => `${Math.round((v - 1) * 100)}%`}
         />
         <SliderRow
-          label="Film Grain"
-          desc="Micro-pixel dither to break exact pixel hashes"
+          label="Film Grain (Noise)"
+          desc="Set to 0% for pure crystal-clean video; higher values add micro-texture"
           min={0} max={5} step={0.5}
-          value={params.film_grain}
+          value={params.film_grain ?? 0}
           onChange={e => update('film_grain', parseFloat(e.target.value))}
-          format={v => `${v.toFixed(1)}%`}
+          format={v => v === 0 ? '0.0% (Clean / No Grain)' : `${v.toFixed(1)}%`}
         />
 
         {/* Audio */}
-        <SectionLabel icon={Volume2}>Audio & Acoustic</SectionLabel>
+        <SectionLabel icon={Volume2}>Audio & Acoustic Desync</SectionLabel>
 
         <Toggle
           label="4-Band Harmonic Notch EQ"
@@ -190,8 +255,8 @@ export default function TransformSettings({ params, setParams }) {
         />
         <div className="toggle-row" style={{ borderBottom: 'none' }}>
           <Toggle
-            label="GPU Encoding (NVENC)"
-            desc="NVIDIA hardware encoding — preserves 1080p quality at CQ-17"
+            label="GPU Encoding (NVIDIA NVENC)"
+            desc="High-bitrate cinema rendering with zero CPU bottleneck (up to 50 Mbps 4K)"
             checked={params.use_gpu}
             onChange={e => update('use_gpu', e.target.checked)}
           />

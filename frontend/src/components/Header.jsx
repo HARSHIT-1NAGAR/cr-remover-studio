@@ -1,9 +1,10 @@
 import React from 'react'
-import { Clapperboard, Sparkles, Bot, Shield, Zap, Cpu, Rocket, Key, FolderOpen, Sun, Moon } from 'lucide-react'
+import { Clapperboard, Sparkles, Bot, Shield, Zap, Cpu, Rocket, Key, FolderOpen, Sun, Moon, Image as ImageIcon } from 'lucide-react'
 
 const MODES = [
   { key: 'autopilot', label: '⚡ Auto-Pilot Factory', icon: Rocket },
   { key: 'ai_shorts', label: 'AI Shorts Studio', icon: Sparkles },
+  { key: 'thumbnail', label: '📸 Cover Studio', icon: ImageIcon },
   { key: 'auto_viral', label: 'Viral Hunter', icon: Bot },
   { key: 'studio', label: 'CR Bypass', icon: Shield },
 ]

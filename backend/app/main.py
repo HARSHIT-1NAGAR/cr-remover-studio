@@ -33,7 +33,8 @@ from app.pipeline import VideoPipeline, VideoProbe
 from app.auto_viral import AutoViralEngine
 from app.editor_schemas import (
     GenerateTTSRequest, ParseScriptRequest, GenerateScriptFromTopicRequest, AIShortsRenderRequest,
-    BatchAutoPilotRequest, GenerateThumbnailRequest, GenerateMetadataRequest, RedditStoryRequest, StockSearchRequest,
+    BatchAutoPilotRequest, GenerateThumbnailRequest, ThumbnailHooksRequest, ThumbnailFramesRequest,
+    GenerateMetadataRequest, RedditStoryRequest, StockSearchRequest,
     PodcastDialogueRequest, TrendToScriptRequest, TelegramBotRequest,
     GeminiPoolKeysRequest, GeminiTestKeysRequest, GeminiKeyRemoveRequest, ExportVideoRequest
 )
@@ -42,7 +43,7 @@ from app.tts_engine import TTSEngine
 from app.scene_director import SceneDirector
 from app.editor_engine import AIShortsRenderer
 from app.broll_harvester import BRollHarvester
-from app.thumbnail_generator import ThumbnailGenerator
+from app.thumbnail_generator import ThumbnailGenerator, THUMBNAIL_STYLES
 from app.meta_generator import MetaGenerator
 from app.reddit_generator import RedditStoryGenerator
 from app.trend_harvester import TrendHarvester
@@ -51,6 +52,7 @@ from app.telegram_bot import TelegramStudioBot
 from app.motion_tracker import SmartMotionTracker
 from app.batch_autopilot import BatchAutoPilotEngine, BATCH_JOBS
 from app.audio_assets import ASSETS_DIR, BGM_DIR, SFX_DIR, init_default_audio_assets
+from app.yt_downloader import YTDownloader
 
 
 # Initialize audio assets on startup
@@ -255,41 +257,41 @@ async def download_video_from_url(payload: DownloadUrlRequest):
         raise HTTPException(status_code=400, detail="URL is required")
 
     job_id = str(uuid.uuid4())[:8]
-    output_template = str(UPLOADS_DIR / f"{job_id}_%(title).40s.%(ext)s")
+    output_file = UPLOADS_DIR / f"{job_id}_video.mp4"
 
-    yt_dlp_bin = BACKEND_DIR.parent / "venv" / "bin" / "yt-dlp"
-    if not yt_dlp_bin.exists():
-        yt_dlp_bin = "yt-dlp"
+    try:
+        await YTDownloader.download_video(url=url, output_path=output_file, max_filesize="500M")
+    except RuntimeError as err:
+        err_msg = str(err)
+        # Surface friendly 429 hint to the UI
+        if "429" in err_msg or "anti-429" in err_msg:
+            raise HTTPException(
+                status_code=429,
+                detail=(
+                    "YouTube rate-limited this server (429). "
+                    "Fix: place a cookies.txt file at storage/cookies.txt or "
+                    "sign in to Chrome/Firefox so the app can extract your session. "
+                    f"Details: {err_msg[:200]}"
+                )
+            )
+        raise HTTPException(status_code=400, detail=f"Download failed: {err_msg[:300]}")
+    except Exception as err:
+        raise HTTPException(status_code=400, detail=f"Download failed: {str(err)[:300]}")
 
-    cmd = [
-        str(yt_dlp_bin),
-        "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best",
-        "--merge-output-format", "mp4",
-        "-o", output_template,
-        "--no-playlist",
-        "--max-filesize", "500M",
-        url
-    ]
+    # yt-dlp may save with a different extension — find actual file
+    if not output_file.exists():
+        matching = sorted(UPLOADS_DIR.glob(f"{job_id}_*"), key=lambda p: p.stat().st_size, reverse=True)
+        if matching:
+            output_file = matching[0]
+        else:
+            raise HTTPException(status_code=500, detail="Downloaded video file not found on disk")
 
-    proc = await asyncio.create_subprocess_exec(
-        *cmd,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE
-    )
-    _, stderr = await proc.communicate()
-
-    if proc.returncode != 0:
-        err_msg = stderr.decode(errors="ignore") if stderr else "Failed to download video from URL"
-        raise HTTPException(status_code=400, detail=f"Download failed: {err_msg[:250]}")
-
-    matching = list(UPLOADS_DIR.glob(f"{job_id}_*"))
-    if not matching:
-        raise HTTPException(status_code=500, detail="Downloaded video file not found on disk")
-
-    downloaded_file = matching[0]
+    downloaded_file = output_file
     file_size = downloaded_file.stat().st_size
     meta = await VideoProbe.probe(downloaded_file)
-    clean_name = downloaded_file.name[len(job_id) + 1:]
+    # Strip job_id prefix safely
+    raw_name = downloaded_file.name
+    clean_name = raw_name[len(job_id) + 1:] if raw_name.startswith(job_id) else raw_name
 
     job = JobStatus(
         job_id=job_id,
@@ -856,39 +858,82 @@ async def search_broll_stock(payload: StockSearchRequest):
     )
 
 
-@app.post("/api/thumbnail/generate")
-async def generate_video_thumbnail(payload: GenerateThumbnailRequest):
-    """Generates high-CTR 9:16 cover thumbnail image for a video."""
+@app.get("/api/thumbnail/styles")
+async def get_thumbnail_styles():
+    """Returns available high-CTR thumbnail preset typography and badge styles."""
+    return [
+        {
+            "id": k,
+            "name": v["name"],
+            "text_color": f"rgb({v['text_color'][0]},{v['text_color'][1]},{v['text_color'][2]})",
+            "badge_bg": f"rgb({v['badge_bg'][0]},{v['badge_bg'][1]},{v['badge_bg'][2]})"
+        }
+        for k, v in THUMBNAIL_STYLES.items()
+    ]
+
+
+@app.post("/api/thumbnail/ai-hooks")
+async def generate_thumbnail_hooks(payload: ThumbnailHooksRequest):
+    """Generates punchy 2-4 word high-CTR thumbnail hook phrases."""
+    hooks = await ThumbnailGenerator.generate_ai_hooks(
+        topic=payload.topic,
+        gemini_api_key=payload.gemini_api_key or ""
+    )
+    return {"hooks": hooks}
+
+
+@app.post("/api/thumbnail/extract-frames")
+async def extract_thumbnail_frames(payload: ThumbnailFramesRequest):
+    """Extracts candidate frames spaced across a video for live thumbnail selection."""
     video_p = Path(payload.video_path)
     if not video_p.exists():
-        # Look in processed or uploads
         match = list(STORAGE_DIR.glob(f"**/{video_p.name}"))
         if match:
             video_p = match[0]
         else:
             raise HTTPException(status_code=404, detail="Source video not found")
 
+    frames = await ThumbnailGenerator.extract_candidate_frames(video_p, count=payload.count)
+    return {"frames": frames}
+
+
+@app.post("/api/thumbnail/generate")
+async def generate_video_thumbnail(payload: GenerateThumbnailRequest):
+    """Generates high-CTR 9:16 cover thumbnail image for a video or custom topic."""
+    video_p = None
+    if payload.video_path:
+        p = Path(payload.video_path)
+        if p.exists():
+            video_p = p
+        else:
+            match = list(STORAGE_DIR.glob(f"**/{p.name}"))
+            if match:
+                video_p = match[0]
+
     cover_path = await ThumbnailGenerator.generate_cover(
         video_path=video_p,
         hook_text=payload.hook_text,
         badge_text=payload.badge_text,
         style_key=payload.style_key,
-        timestamp_sec=payload.timestamp_sec
+        timestamp_sec=payload.timestamp_sec,
+        save_to_desktop=payload.save_to_desktop
     )
     return {
         "cover_url": f"/api/media/processed/{cover_path.name}",
-        "cover_path": str(cover_path)
+        "cover_path": str(cover_path),
+        "desktop_vault": "/api/exports/summary"
     }
 
 
 @app.post("/api/metadata/generate")
 async def generate_seo_metadata(payload: GenerateMetadataRequest):
-    """Generates viral SEO titles, description, tags, and pinned comment."""
+    """Generates viral SEO titles, description, tags, and pinned comment with dynamic angle variety."""
     return await MetaGenerator.generate_metadata(
         topic=payload.topic,
         script_summary=payload.script_summary,
         niche=payload.niche,
-        gemini_api_key=payload.gemini_api_key
+        gemini_api_key=payload.gemini_api_key,
+        style_angle=payload.style_angle or "all_angles"
     )
 
 

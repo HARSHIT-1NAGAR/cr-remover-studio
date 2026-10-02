@@ -67,9 +67,11 @@ class TransformParams(BaseModel):
     mirror_flip: bool = Field(default=False, description="Horizontally flip/mirror video (Default OFF)")
     ken_burns_zoom: float = Field(default=1.07, ge=1.0, le=1.3, description="Continuous dynamic zoom factor (1.0 = none)")
     color_grade: bool = Field(default=True, description="Apply color grading, saturation, and gamma shift")
-    film_grain: float = Field(default=2.0, ge=0.0, le=10.0, description="Dynamic film grain noise intensity percentage")
+    clarity_boost: bool = Field(default=False, description="Apply adaptive unsharp sharpening for ultra-crisp output")
+    film_grain: float = Field(default=0.0, ge=0.0, le=10.0, description="Dynamic film grain noise intensity percentage (0.0 = crystal clean)")
     tilt_3d: bool = Field(default=False, description="Apply subtle 0.8-degree 3D perspective distortion")
     shorts_vertical_916: bool = Field(default=False, description="Convert 16:9 landscape to 9:16 vertical Shorts layout with blurred borders")
+    render_resolution: str = Field(default="original", description="Render resolution target: original | 4k | 2k | 1080p")
     
     # Advanced Risk-Reduction Video Protections
     dynamic_time_warp: bool = Field(default=True, description="Subtle non-linear time warping (1.02x-1.06x speed LFO) to break temporal frame hashes")

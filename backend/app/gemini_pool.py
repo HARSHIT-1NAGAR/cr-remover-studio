@@ -29,13 +29,15 @@ from app.config import STORAGE_DIR
 
 POOL_STORAGE_FILE = STORAGE_DIR / "gemini_keys.json"
 
-# Models to attempt in order of speed, capability, and availability
+# Models to attempt in order of speed, quota availability, and capability
 PREFERRED_MODELS = [
-    "gemini-3-flash-preview",
-    "gemini-3.5-flash",
-    "gemini-3.1-flash-lite",
+    "gemini-flash-lite-latest",
     "gemini-flash-latest",
+    "gemini-2.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
     "gemini-3.7-flash",
+    "gemini-3-flash-preview",
 ]
 
 

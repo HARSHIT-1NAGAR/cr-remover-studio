@@ -115,11 +115,23 @@ class BatchAutoPilotRequest(BaseModel):
 
 
 class GenerateThumbnailRequest(BaseModel):
-    video_path: str = Field(...)
-    hook_text: str = Field(...)
+    video_path: Optional[str] = Field(default="")
+    topic: Optional[str] = Field(default="")
+    hook_text: str = Field(default="LOOK CLOSER")
     badge_text: str = Field(default="MUST WATCH")
     style_key: str = Field(default="viral_yellow")
     timestamp_sec: float = Field(default=1.0)
+    save_to_desktop: bool = Field(default=True)
+
+
+class ThumbnailHooksRequest(BaseModel):
+    topic: str = Field(...)
+    gemini_api_key: Optional[str] = ""
+
+
+class ThumbnailFramesRequest(BaseModel):
+    video_path: str = Field(...)
+    count: int = Field(default=6, ge=2, le=12)
 
 
 class GenerateMetadataRequest(BaseModel):
@@ -127,6 +139,7 @@ class GenerateMetadataRequest(BaseModel):
     script_summary: str = Field(default="")
     niche: str = Field(default="general")
     gemini_api_key: Optional[str] = ""
+    style_angle: Optional[str] = "all_angles"
 
 
 class RedditStoryRequest(BaseModel):
